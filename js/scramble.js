@@ -63,19 +63,19 @@
   };
   window.WHIPLASH_HOVER(document.querySelector('.nav'), '.nav__item');
 
-  // nav labels: the bubble on hover; on the Projects page the letters wave (no typing effect, no colour change)
-  function waveLabel(a) {
-    if (!a.dataset.html) a.dataset.html = a.innerHTML;
-    let i = 0;
-    a.innerHTML = a.dataset.html.split(/(<span class="br"><\/span>)/).map((part) =>
-      part.startsWith('<span') ? part : [...part].map((ch) => (ch.trim() ? `<span class="sc sc--wave" style="--i:${i++}">${ch}</span>` : ch)).join('')
-    ).join('');
-  }
+  // nav labels are split into letters once (each letter its own span): the letters wave on hover on
+  // Projects, and scatter away from the cursor on the homepage (the "letter spill", main.js)
   document.querySelectorAll('.nav__item').forEach((a) => {
+    let i = 0;
+    a.innerHTML = a.innerHTML.split(/(<span class="br"><\/span>)/).map((part) =>
+      part.startsWith('<span') ? part : [...part].map((ch) => (ch.trim() ? `<span class="sc" style="--i:${i++}">${ch}</span>` : ch)).join('')
+    ).join('');
     a.addEventListener('mouseenter', () => {
       window.WHIPLASH_SOUND?.hover();
       const page = (document.getElementById('app') || document.body).dataset.page;
-      if (page === 'projects' && !reduce) waveLabel(a);
+      if (page === 'projects' && !reduce) {
+        a.querySelectorAll('.sc').forEach((l) => { l.classList.remove('sc--wave'); void l.offsetWidth; l.classList.add('sc--wave'); });
+      }
     });
   });
 })();

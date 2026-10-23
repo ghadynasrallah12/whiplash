@@ -164,10 +164,34 @@
     setTimeout(() => document.documentElement.classList.remove('intro-on'), 3200);
   }
 
-  // ---- magnetic nav: labels lean toward the cursor when it comes close ----
   const fine = window.matchMedia('(pointer: fine)').matches;
   let mx = -9999, my = -9999;
   window.addEventListener('mousemove', (e) => { mx = e.clientX; my = e.clientY; }, { passive: true });
+
+  // ---- letter spill (homepage): the letters of the nav labels scatter away from the cursor as it
+  //      passes, and settle back ----
+  const letters = [...document.querySelectorAll('.nav__item .sc')].map((el) => ({ el, x: 0, y: 0, r: 0 }));
+  (function spill() {
+    const onHome = body.dataset.page === 'home';
+    if (fine && !reduce) {
+      const R = Math.max(70, window.innerWidth * 0.06);
+      letters.forEach((l) => {
+        let tx = 0, ty = 0, tr = 0;
+        if (onHome && mx > -9000) {
+          const r = l.el.getBoundingClientRect();
+          const cx = r.left + r.width / 2 - l.x, cy = r.top + r.height / 2 - l.y;
+          const dx = cx - mx, dy = cy - my, d = Math.hypot(dx, dy) || 1;
+          if (d < R) { const k = (1 - d / R) * R * 0.36; tx = (dx / d) * k; ty = (dy / d) * k; tr = (dx / R) * 18; }
+        }
+        l.x += (tx - l.x) * 0.14; l.y += (ty - l.y) * 0.14; l.r += (tr - l.r) * 0.14;
+        const on = Math.abs(l.x) > 0.05 || Math.abs(l.y) > 0.05 || Math.abs(l.r) > 0.05;
+        l.el.style.transform = on ? `translate(${l.x.toFixed(2)}px, ${l.y.toFixed(2)}px) rotate(${l.r.toFixed(2)}deg)` : '';
+      });
+    }
+    requestAnimationFrame(spill);
+  })();
+
+  // ---- magnetic nav: labels lean toward the cursor when it comes close ----
   const magnets = nav.map((el) => ({ el, x: 0, y: 0 }));
   (function magnet() {
     if (fine && !reduce) {
@@ -175,7 +199,7 @@
       magnets.forEach((m) => {
         const r = m.el.getBoundingClientRect();
         let tx = 0, ty = 0;
-        if (r.width && mx > -9000 && m.el.style.opacity !== '0') {
+        if (r.width && mx > -9000 && m.el.style.opacity !== '0' && body.dataset.page !== 'home') {
           const cx = r.left + r.width / 2 - m.x, cy = r.top + r.height / 2 - m.y;
           const dx = mx - cx, dy = my - cy, d = Math.hypot(dx, dy);
           if (d < R) { const k = (1 - d / R) * 0.32; tx = dx * k; ty = dy * k; }
