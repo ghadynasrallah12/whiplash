@@ -207,7 +207,18 @@ html, body {
 .filters.is-closing .fw { animation: fwOut .4s var(--groove) forwards; animation-delay: calc((var(--n, 12) - 1 - var(--i, 0)) * 26ms); }   /* leaves bottom-up */
 @keyframes fwIn  { from { opacity: 0; transform: translateY(-.55em); } }
 @keyframes fwOut { to   { opacity: 0; transform: translateY(.45em); } }
-.filters__item.is-on .fw, .filters__item:hover .fw, .filters__item:focus-visible .fw { border-bottom-color: currentColor; }
+.filters__item:hover .fw, .filters__item:focus-visible .fw { border-bottom-color: currentColor; }
+/* the selected filter: a light sweeps through its letters (a red → white → red gradient sliding across) */
+.filters__item.is-on .fw {
+  background: linear-gradient(100deg, var(--red) 0 30%, #fff 50%, var(--red) 70% 100%) 0 0 / 300% 100%;
+  -webkit-background-clip: text; background-clip: text; color: transparent;
+  animation: fwIn .5s var(--groove) backwards, fwSweep 2.6s linear infinite;
+  animation-delay: calc(var(--i, 0) * 38ms), calc(var(--i, 0) * -120ms);
+}
+.filters.is-closing .filters__item.is-on .fw { animation: fwOut .4s var(--groove) forwards; animation-delay: calc((var(--n, 12) - 1 - var(--i, 0)) * 26ms); }
+@keyframes fwSweep { from { background-position: 100% 0; } to { background-position: -100% 0; } }
+/* a word is clickable across its whole line box, so the gaps of the justified block don't swallow clicks */
+.filters__item { padding: .12em 0; margin: -.12em 0; }
 
 /* ---- the list (auge-xp style; all positions come from works.js every frame) ---- */
 .works { position: absolute; inset: 0; }
