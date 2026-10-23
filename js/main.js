@@ -186,21 +186,4 @@
     }
     requestAnimationFrame(magnet);
   })();
-
-  // ---- press to unmute: the record spins while the film has sound ----
-  const soundBtn = document.getElementById('sound');
-  const film = document.querySelector('.hero__media');
-  if (soundBtn && film && film.tagName === 'VIDEO') {
-    const label = soundBtn.querySelector('.sound__label');
-    soundBtn.addEventListener('mouseenter', () => window.WHIPLASH_SOUND?.hover());
-    soundBtn.addEventListener('click', () => {
-      film.muted = !film.muted; film.volume = 1;
-      if (!film.muted) film.play().catch(() => {});
-      soundBtn.classList.toggle('is-on', !film.muted);
-      soundBtn.setAttribute('aria-pressed', String(!film.muted));
-      soundBtn.setAttribute('aria-label', film.muted ? 'Unmute the film' : 'Mute the film');
-      if (label) label.textContent = film.muted ? 'PRESS TO UNMUTE • PRESS TO UNMUTE •' : 'SOUND ON • SOUND ON • SOUND ON •';
-      window.WHIPLASH_SOUND?.bubble(film.muted ? 1 : -1, 0.8);
-    });
-  }
 })();

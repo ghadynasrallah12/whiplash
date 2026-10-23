@@ -21,22 +21,6 @@
   <!-- 3D logo canvas -->
   <canvas id="logo" class="logo" aria-label="Whiplash logo"></canvas>
 
-  <!-- press to unmute: the record spins while the film has sound (homepage only) -->
-  <button class="sound" id="sound" type="button" aria-label="Unmute the film" aria-pressed="false">
-    <svg class="wd__disc" viewBox="0 0 200 200" aria-hidden="true">
-      <defs><path id="sound-ring" d="M100 100 m-78 0 a78 78 0 1 1 156 0 a78 78 0 1 1 -156 0"/></defs>
-      <g class="wd__ring"><text class="wd__ringtext" textLength="488" lengthAdjust="spacing"><textPath class="sound__label" href="#sound-ring" textLength="488" lengthAdjust="spacing">PRESS TO UNMUTE • PRESS TO UNMUTE •</textPath></text></g>
-      <g class="wd__vinyl">
-        <circle cx="100" cy="100" r="60" fill="#0a0a0a"/>
-        <g fill="none" stroke="#fff" stroke-opacity=".16" stroke-width="1"><circle cx="100" cy="100" r="56"/><circle cx="100" cy="100" r="50"/><circle cx="100" cy="100" r="44"/><circle cx="100" cy="100" r="38"/><circle cx="100" cy="100" r="32"/></g>
-        <path d="M100 40a60 60 0 0 1 42 17" fill="none" stroke="#fff" stroke-opacity=".5" stroke-width="2" stroke-linecap="round"/>
-        <path d="M100 160a60 60 0 0 1 -42 -17" fill="none" stroke="#fff" stroke-opacity=".5" stroke-width="2" stroke-linecap="round"/>
-        <circle cx="100" cy="100" r="22" fill="var(--red)"/><circle cx="100" cy="100" r="3" fill="#0a0a0a"/>
-      </g>
-      <path class="wd__play" d="M93 88l20 12-20 12z" fill="#fff"/>
-    </svg>
-  </button>
-
   <!-- Red curtains: from the right for About/Clients/Team/Contact, from the bottom for Projects -->
   <div class="panel" aria-hidden="true"></div>
   <div class="panel panel--bottom" aria-hidden="true"></div>

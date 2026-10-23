@@ -487,22 +487,6 @@ html.intro-on .logo { animation: logoDrop 1.1s cubic-bezier(.34,1.45,.64,1) 1.15
 @keyframes logoDrop { from { transform: translateY(-75vh); } to { transform: translateY(0); } }
 html.intro-on .nav__item { animation-delay: calc(1.05s + var(--d, 0) * .08s); }
 
-/* ---------- Press to unmute ---------------------------- */
-.sound {
-  position: fixed; left: 50%; bottom: var(--gutter-y); translate: -50% 0; z-index: 4;
-  width: clamp(60px, 5.4vw, 96px); padding: 0; border: 0; background: none; color: #fff; cursor: pointer;
-  opacity: 0; pointer-events: none; transition: opacity .5s ease;
-}
-[data-page="home"] .sound { opacity: 1; pointer-events: auto; transition-delay: .3s; }
-html.intro-on [data-page="home"] .sound { transition-delay: 2s; }
-.sound .wd__ringtext { font-size: 13px; }
-.sound:hover .wd__ring, .sound.is-on .wd__ring { animation-duration: 4s; }
-.sound:hover .wd__vinyl { animation-play-state: running; }
-.sound.is-on .wd__vinyl { animation-play-state: running; animation-duration: 1.6s; }
-.sound:hover .wd__play { transform: scale(1.25); }
-.sound.is-on .wd__play { d: path("M92 88h5v24h-5zM103 88h5v24h-5z"); }
-@media (max-width: 759px) { .sound { bottom: calc(var(--gutter-y) + 3vh); } }
-
 /* ---------- Motion blur on the list while it scrolls ---- */
 .works.is-moving .work__name, .works.is-moving .work__idx { filter: url(#mblur); }
 @media (prefers-reduced-motion: reduce) {
