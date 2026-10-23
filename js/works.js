@@ -554,6 +554,7 @@
       const h = Math.max(0, items.findIndex((p) => p.hero));
       pos = target = settled = h; lastWheel = 0;
       page.hidden = false;
+      page.classList.remove('is-closing');
       page.classList.add('is-live', 'is-bg');
       curtain?.classList.add('is-under');          // the backdrop paints the red from here on (it follows the curtain's edge)
       heroEl?.classList.add('is-ready', 'is-handed');   // the GL sheet shows the same frame from now on
@@ -576,6 +577,7 @@
     close(ms = 1250) {
       closeMenu(); clearTimeout(dockTimer); hoverRow = null; hoverWant = 0; if (!detail.hidden) closeDetail();
       docked = false; closing = true; film = true;
+      page.classList.add('is-closing');                            // burger + filters go at once
       // the film (hero video) grows back under the slot: if the slot shows the film itself drop the copy at
       // once (same frame); if it shows another project, let it fade over the growing film
       const active = items[wrap(Math.round(pos), n) % items.length];
@@ -585,7 +587,10 @@
       clearTimeout(closeTimer);
       closeTimer = setTimeout(() => {
         closing = false; film = false;
+        window.WHIPLASH_GL?.clear();               // wipe the sheet the same instant the real film shows (no stale frame)
         heroEl?.classList.remove('is-handed');     // the real film is back under it, same frame
+        page.classList.remove('is-closing');
+        page.hidden = true;
         if (heroMedia?.tagName === 'VIDEO' && heroMedia.paused) heroMedia.play().catch(() => {});
         page.classList.remove('is-live', 'is-bg');
         curtain?.classList.remove('is-under');

@@ -305,6 +305,8 @@ html, body {
 .wd__bg[hidden] { display: none; }
 html.in-detail .cursor-label { opacity: 0 !important; }
 html.in-detail .burger { visibility: hidden; }
+.burger, .filters { transition: opacity .25s ease; }
+.page--projects.is-closing .burger, .page--projects.is-closing .filters { opacity: 0; pointer-events: none; }
 .wd__video[hidden] { display: none; }
 .wd__back { position: absolute; left: var(--gutter-x); top: var(--gutter-y); width: clamp(56px, 7.3vw, 140px); height: auto; padding: 0; border: 0; background: none; color: var(--red); cursor: pointer; z-index: 2; transition: transform .35s var(--groove), color .3s; }
 .wd__back:hover { transform: translateX(-6%); }
