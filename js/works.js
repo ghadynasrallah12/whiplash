@@ -159,12 +159,18 @@
   function buildFilters() {
     menu.innerHTML = '';
     window.WHIPLASH_HOVER?.(menu, '.filters__item');
+    let wi = 0;
     ['All', ...FILTERS].forEach((f, i) => {
-      // inline spans (not buttons) so the labels run on and wrap like the text block on the slide
+      // inline spans (not buttons) so the labels run on and wrap like the text block on the slide;
+      // each word is its own little block so it can land / leave on its own and blend with the backdrop
       const b = document.createElement('span');
       b.setAttribute('role', 'button'); b.tabIndex = 0;
       b.className = 'filters__item' + (i === 0 ? ' is-on' : '');
-      b.textContent = f;
+      f.split(' ').forEach((word, j) => {
+        if (j) b.appendChild(document.createTextNode(' '));
+        const ws = document.createElement('span'); ws.className = 'fw'; ws.textContent = word; ws.style.setProperty('--i', wi++);
+        b.appendChild(ws);
+      });
       b.addEventListener('mouseenter', () => tick(1, 0.55));
       b.addEventListener('keydown', (e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); b.click(); } });
       if (i) menu.appendChild(document.createTextNode(' '));
@@ -179,8 +185,20 @@
       menu.appendChild(b);
     });
   }
-  function openMenu()  { burger.classList.add('is-open');    menu.hidden = false; page.classList.add('menu-open');    burger.setAttribute('aria-expanded', 'true'); }
-  function closeMenu() { burger.classList.remove('is-open'); menu.hidden = true;  page.classList.remove('menu-open'); burger.setAttribute('aria-expanded', 'false'); }
+  let menuTimer = 0;
+  function openMenu() {
+    clearTimeout(menuTimer);
+    burger.classList.add('is-open'); burger.setAttribute('aria-expanded', 'true');
+    menu.classList.remove('is-closing'); menu.hidden = false;   // the words land (CSS)
+    page.classList.add('menu-open');
+  }
+  function closeMenu() {
+    if (menu.hidden) return;
+    burger.classList.remove('is-open'); burger.setAttribute('aria-expanded', 'false');
+    menu.classList.add('is-closing');                            // the words leave (CSS), then the block hides
+    clearTimeout(menuTimer);
+    menuTimer = setTimeout(() => { menu.hidden = true; menu.classList.remove('is-closing'); page.classList.remove('menu-open'); }, reduce ? 0 : 520);
+  }
   burger.addEventListener('click', () => (menu.hidden ? openMenu() : closeMenu()));
 
   // ---------- scroll sound: a bubble that sinks, with a bass thump (synthesised) -----
