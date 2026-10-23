@@ -224,7 +224,23 @@
   }
 
   // the same bubble, softer, on hover of anything clickable
-  window.WHIPLASH_SOUND = { bubble: (dir = 1, vol = 1) => tick(dir, vol), hover: () => tick(1, 0.55) };
+  // a bass hit (the logo landing on the intro)
+  function thud() {
+    if (reduce) return;
+    try {
+      if (!ac || ac.state !== 'running') return;
+      const t = ac.currentTime + 0.01;
+      const b = ac.createOscillator(); b.type = 'sine';
+      b.frequency.setValueAtTime(96, t); b.frequency.exponentialRampToValueAtTime(34, t + 0.35);
+      const g = ac.createGain(); g.gain.setValueAtTime(0.0001, t); g.gain.exponentialRampToValueAtTime(0.9, t + 0.006); g.gain.exponentialRampToValueAtTime(0.0001, t + 0.55);
+      b.connect(g).connect(ac.destination); b.start(t); b.stop(t + 0.6);
+      const n = ac.createBufferSource(); const buf = ac.createBuffer(1, ac.sampleRate * 0.05, ac.sampleRate); const d = buf.getChannelData(0);
+      for (let i = 0; i < d.length; i++) d[i] = (Math.random() * 2 - 1) * Math.pow(1 - i / d.length, 3);
+      n.buffer = buf; const ng = ac.createGain(); ng.gain.value = 0.25; const lp = ac.createBiquadFilter(); lp.type = 'lowpass'; lp.frequency.value = 900;
+      n.connect(lp).connect(ng).connect(ac.destination); n.start(t);
+    } catch (_) {}
+  }
+  window.WHIPLASH_SOUND = { bubble: (dir = 1, vol = 1) => tick(dir, vol), hover: () => tick(1, 0.55), thud };
   const hoverSound = (el) => el.addEventListener('mouseenter', () => tick(1, 0.55));
   [burger, detail.querySelector('.wd__back'), detail.querySelector('.wd__link')].forEach(hoverSound);
 
@@ -379,6 +395,8 @@
     if (window.WHIPLASH_GL) window.WHIPLASH_GL.draw(glItems, Math.max(-1, Math.min(1, (target - pos) * 0.6)), { x: lx, y: ly }, lens, bgParams);
   }
 
+  const blurG = document.getElementById('mblur-g');
+  let blurSd = 0;
   let lastT = performance.now();
   function frame() {
     if (!running) return;
@@ -405,6 +423,13 @@
       renderLabel();
       renderBg(dt);
       render(false);
+      // motion blur: the names smear along the scroll while the list is moving
+      const sd = Math.min(14, Math.abs(target - pos) * 11);
+      if (Math.abs(sd - blurSd) > 0.15) {
+        blurSd = sd;
+        blurG?.setAttribute('stdDeviation', `0 ${sd.toFixed(2)}`);
+        listEl.classList.toggle('is-moving', sd > 0.35);
+      }
     }
     requestAnimationFrame(frame);
   }

@@ -155,4 +155,52 @@
   // open directly on a page if the URL says so
   const initial = pageFromHash();
   if (initial !== 'home') setTimeout(() => show(initial), 600);
+
+  // ---- page-load intro: the curtain wipes off, the logo drops in with a bass hit ----
+  if (document.documentElement.classList.contains('intro-on')) {
+    const intro = document.querySelector('.intro');
+    intro?.addEventListener('animationend', () => { intro.style.display = 'none'; });
+    setTimeout(() => window.WHIPLASH_SOUND?.thud?.(), 1150 + 620);   // the landing (plays only once the browser allows sound)
+    setTimeout(() => document.documentElement.classList.remove('intro-on'), 3200);
+  }
+
+  // ---- magnetic nav: labels lean toward the cursor when it comes close ----
+  const fine = window.matchMedia('(pointer: fine)').matches;
+  let mx = -9999, my = -9999;
+  window.addEventListener('mousemove', (e) => { mx = e.clientX; my = e.clientY; }, { passive: true });
+  const magnets = nav.map((el) => ({ el, x: 0, y: 0 }));
+  (function magnet() {
+    if (fine && !reduce) {
+      const R = Math.max(90, window.innerWidth * 0.085);
+      magnets.forEach((m) => {
+        const r = m.el.getBoundingClientRect();
+        let tx = 0, ty = 0;
+        if (r.width && mx > -9000 && m.el.style.opacity !== '0') {
+          const cx = r.left + r.width / 2 - m.x, cy = r.top + r.height / 2 - m.y;
+          const dx = mx - cx, dy = my - cy, d = Math.hypot(dx, dy);
+          if (d < R) { const k = (1 - d / R) * 0.32; tx = dx * k; ty = dy * k; }
+        }
+        m.x += (tx - m.x) * 0.16; m.y += (ty - m.y) * 0.16;
+        m.el.style.translate = (Math.abs(m.x) > 0.05 || Math.abs(m.y) > 0.05) ? `${m.x.toFixed(2)}px ${m.y.toFixed(2)}px` : '';
+      });
+    }
+    requestAnimationFrame(magnet);
+  })();
+
+  // ---- press to unmute: the record spins while the film has sound ----
+  const soundBtn = document.getElementById('sound');
+  const film = document.querySelector('.hero__media');
+  if (soundBtn && film && film.tagName === 'VIDEO') {
+    const label = soundBtn.querySelector('.sound__label');
+    soundBtn.addEventListener('mouseenter', () => window.WHIPLASH_SOUND?.hover());
+    soundBtn.addEventListener('click', () => {
+      film.muted = !film.muted; film.volume = 1;
+      if (!film.muted) film.play().catch(() => {});
+      soundBtn.classList.toggle('is-on', !film.muted);
+      soundBtn.setAttribute('aria-pressed', String(!film.muted));
+      soundBtn.setAttribute('aria-label', film.muted ? 'Unmute the film' : 'Mute the film');
+      if (label) label.textContent = film.muted ? 'PRESS TO UNMUTE • PRESS TO UNMUTE •' : 'SOUND ON • SOUND ON • SOUND ON •';
+      window.WHIPLASH_SOUND?.bubble(film.muted ? 1 : -1, 0.8);
+    });
+  }
 })();
