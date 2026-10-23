@@ -173,6 +173,12 @@
           if (ia > ra) { u.uScale.value.set(ra / ia, 1); u.uOffset.value.set((1 - ra / ia) / 2, 0); }
           else { u.uScale.value.set(1, ia / ra); u.uOffset.value.set(0, (1 - ia / ra) / 2); }
         }
+        // a slice of a bigger picture (the filmstrip frame): keep the cover-fit of the full rect, show only the slice
+        if (it.full && it.full.h > 0) {
+          const t = (it.rect.y - it.full.y) / it.full.h, bt = (it.rect.y + it.rect.h - it.full.y) / it.full.h;
+          u.uOffset.value.y += u.uScale.value.y * (1 - bt);
+          u.uScale.value.y *= (bt - t);
+        }
         u.uRect.value.set(it.rect.x, it.rect.y, it.rect.w, it.rect.h);
         u.uHover.value = it.hover;
         u.uVel.value = it.film ? 0 : vel;

@@ -311,8 +311,10 @@
       row.style.visibility = vis ? 'visible' : 'hidden';
       if (!vis && !force) return;
 
-      // vertical: regular pitch, plus the gap the open row makes
-      const y = d * pitch + Math.sign(d) * E * smooth(a);
+      // vertical: regular pitch, plus the gap the open row makes. Inside the frame (|d| < 1) the
+      // name rides its own picture as it slides through, then settles into the fan.
+      const yFan = d * pitch + Math.sign(d) * E * smooth(a);
+      const y = a < 1 ? d * bigH + (yFan - d * bigH) * smooth(a) : yFan;
       const fade = a > 3.6 ? Math.max(0, 1 - (a - 3.6) / 0.6) : 1;
 
       // name: from the centre, pushed right; grows to full size while open
@@ -330,7 +332,7 @@
         th.style.width = (W * G.thumbW).toFixed(1) + 'px';
         th.style.transform = `translate3d(${(W * G.thumbX - W * G.thumbFan * fan - W * G.thumbOut * open).toFixed(1)}px, ${y.toFixed(2)}px, 0)`;
         // two previews before and two after; they fade before they would reach HOME / PROJECTS
-        th.style.opacity = (fade * Math.max(0, Math.min(1, 1 - (a - 2.15) / 0.5))).toFixed(3);
+        th.style.opacity = (fade * Math.max(0, Math.min(1, 1 - (a - 1.9) / 0.45))).toFixed(3);
       } else th.style.display = 'none';
       // big image: grows out of the middle while the row is open
       const md = row.children[1];
@@ -344,15 +346,26 @@
         const nx = r.width ? ((mx - r.left) / r.width - 0.5) : 0, ny = r.height ? ((my - r.top) / r.height - 0.5) : 0;
         tilt = ` perspective(900px) rotateX(${(-ny * 14 * row.hover).toFixed(2)}deg) rotateY(${(nx * 16 * row.hover).toFixed(2)}deg) scale(${(1 + 0.03 * row.hover).toFixed(3)})`;
       }
-      md.style.transform = `translate3d(-50%, calc(-50% + ${y.toFixed(2)}px), 0) scale(${(0.6 + 0.4 * open).toFixed(3)}, ${(0.15 + 0.85 * open).toFixed(3)})` + tilt;
-      md.style.opacity = (Math.pow(open, 1.4) * gate).toFixed(3);
-      md.style.pointerEvents = open > 0.5 ? 'auto' : 'none';
+      // the frame in the middle is fixed; the pictures slide through it like a filmstrip (as on the
+      // reference): while scrolling, the next one comes in from one edge as the current one leaves
+      // by the other, each clipped to the frame — so two can share it mid-way
+      const fx = W / 2 - bigW / 2, fy = H / 2 - bigH / 2;
+      const yImg = d * bigH;                                    // where this row's picture sits (frame space)
+      const top = Math.max(0, yImg), bottom = Math.min(bigH, bigH + yImg);
+      const inFrame = a < 1 && bottom - top > 0.5;
+      const clipTop = top, clipBottom = bigH - bottom;          // what the frame cuts off (px)
+      md.style.transform = `translate3d(-50%, calc(-50% + ${yImg.toFixed(2)}px), 0)` + tilt;
+      md.style.clipPath = inFrame ? `inset(${clipTop.toFixed(1)}px 0 ${clipBottom.toFixed(1)}px 0)` : 'inset(100% 0 0 0)';
+      md.style.opacity = (inFrame ? gate : 0).toFixed(3);
+      md.style.pointerEvents = a < 0.5 ? 'auto' : 'none';
       row.classList.toggle('is-active', a < 0.5);
-      // GL sheet: where the image sits on screen right now
-      if (open > 0.01 && window.WHIPLASH_GL) {
-        const sx = 0.6 + 0.4 * open, sy = 0.15 + 0.85 * open;
-        const cx = W / 2, cy = H / 2 + y;
-        glItems.push({ rect: { x: cx - bigW * sx / 2, y: cy - bigH * sy / 2, w: bigW * sx, h: bigH * sy }, src: mediaSrc(items[k % items.length], open), hover: row.hover, opacity: Math.pow(open, 1.4) * gate });
+      // GL sheet: the visible slice of this row's picture, plus the full rect it belongs to
+      if (inFrame && window.WHIPLASH_GL) {
+        glItems.push({
+          rect: { x: fx, y: fy + top, w: bigW, h: bottom - top },
+          full: { x: fx, y: fy + yImg, w: bigW, h: bigH },
+          src: mediaSrc(items[k % items.length], open), hover: row.hover * open, opacity: gate,
+        });
       }
     });
     if (zoom && window.WHIPLASH_GL) {
