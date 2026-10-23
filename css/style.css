@@ -181,33 +181,31 @@ html, body {
 .burger { user-select: none; -webkit-tap-highlight-color: transparent; outline: none !important; }
 .burger span { background: var(--red) !important; }   /* never white: no focus styling on the lines */
 
-/* filters: as on the Keynote slide, one justified block of text under the burger — the labels
-   run on and wrap inside a 4.7-label-wide column ("CUTS ON / BEAT", "DIRECTOR'S / CUT FULL / THROTTLE"),
-   .83 of the nav size, 1.5 line height */
+/* filters under the burger: one option per line, .83 of the nav size, 1.5 line height (Keynote spacing) */
 .filters {
   position: absolute;
   left: calc(var(--gutter-x) + var(--nav-size) * .1);
   top: calc(var(--gutter-y) + var(--nav-size) * 2.0);
-  width: calc(var(--nav-size) * 4.7);
   font-size: calc(var(--nav-size) * .83); line-height: 1.5; letter-spacing: -0.035em;
   font-weight: 700; text-transform: uppercase;
-  text-align: justify; text-align-last: left;
   /* no z-index / opacity / animation on the block itself: it must never become a stacking context,
      or the words could not blend with the backdrop (that is what keeps them readable on red, on black
      and over the picture) — so the words animate one by one instead */
 }
 .filters[hidden] { display: none; }
-.filters__item { display: inline; font: inherit; color: var(--red); cursor: pointer; user-select: none; }
+.filters__item { display: block; width: max-content; position: relative; font: inherit; color: var(--red); cursor: pointer; user-select: none; white-space: nowrap; }
+/* one continuous underline under the whole option (hover / keyboard), blended like the words */
+.filters__item::after { content: ""; position: absolute; left: 0; right: 0; bottom: .02em; height: .06em; background: currentColor; mix-blend-mode: difference; opacity: 0; transition: opacity .2s; }
+.filters__item:hover::after, .filters__item:focus-visible::after { opacity: 1; }
 .filters__item:focus { outline: none; }
 .fw {
   display: inline-block; mix-blend-mode: difference;
-  border-bottom: .06em solid transparent; line-height: 1.1;
+  line-height: 1.1;
   animation: fwIn .5s var(--groove) backwards; animation-delay: calc(var(--i, 0) * 38ms);
 }
 .filters.is-closing .fw { animation: fwOut .4s var(--groove) forwards; animation-delay: calc((var(--n, 12) - 1 - var(--i, 0)) * 26ms); }   /* leaves bottom-up */
 @keyframes fwIn  { from { opacity: 0; transform: translateY(-.55em); } }
 @keyframes fwOut { to   { opacity: 0; transform: translateY(.45em); } }
-.filters__item:hover .fw, .filters__item:focus-visible .fw { border-bottom-color: currentColor; }
 /* the selected filter: a light sweeps through its letters (a red → white → red gradient sliding across) */
 .filters__item.is-on .fw {
   background: linear-gradient(100deg, var(--red) 0 30%, #fff 50%, var(--red) 70% 100%) 0 0 / 300% 100%;
@@ -217,8 +215,7 @@ html, body {
 }
 .filters.is-closing .filters__item.is-on .fw { animation: fwOut .4s var(--groove) forwards; animation-delay: calc((var(--n, 12) - 1 - var(--i, 0)) * 26ms); }
 @keyframes fwSweep { from { background-position: 100% 0; } to { background-position: -100% 0; } }
-/* a word is clickable across its whole line box, so the gaps of the justified block don't swallow clicks */
-.filters__item { padding: .12em 0; margin: -.12em 0; }
+
 
 /* ---- the list (auge-xp style; all positions come from works.js every frame) ---- */
 .works { position: absolute; inset: 0; }

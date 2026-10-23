@@ -173,7 +173,6 @@
       });
       b.addEventListener('mouseenter', () => tick(1, 0.55));
       b.addEventListener('keydown', (e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); b.click(); } });
-      if (i) menu.appendChild(document.createTextNode(' '));
       b.addEventListener('click', () => {
         menu.querySelectorAll('.filters__item').forEach((x) => x.classList.toggle('is-on', x === b));
         items = f === 'All' ? ALL.slice() : ALL.filter((p) => p.tag === f);
