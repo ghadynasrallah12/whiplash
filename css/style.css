@@ -176,36 +176,44 @@ html, body {
   display: flex; flex-direction: column; justify-content: space-between;
   z-index: 3;
 }
-.burger span { display: block; height: calc(var(--nav-size) * .13); background: var(--red); transition: transform .35s var(--groove), opacity .25s; transform-origin: center; }
-.burger.is-open span:nth-child(1) { transform: translateY(calc(var(--nav-size) * .285)) rotate(45deg); }
-.burger.is-open span:nth-child(2) { opacity: 0; transform: scaleX(.2); }
-.burger.is-open span:nth-child(3) { transform: translateY(calc(var(--nav-size) * -.285)) rotate(-45deg); }
+.burger span { display: block; height: calc(var(--nav-size) * .13); background: var(--red); transition: transform .35s var(--groove); transform-origin: left center; }
+/* as on the Keynote slide the three lines stay; they just breathe a little while the menu is open */
+.burger.is-open span:nth-child(1) { transform: scaleX(.78); }
+.burger.is-open span:nth-child(3) { transform: scaleX(.78); }
+.burger:focus { outline: none; }
+.burger:focus-visible span { box-shadow: 0 0 0 2px rgb(255 255 255 / .5); }
 
 /* filters list drops under the burger */
+/* measured on the Keynote slide: a hair in from HOME, starting 2/3 of a label under the burger,
+   labels at .93 of the nav size, one label-and-a-half apart */
 .filters {
   position: absolute;
-  left: calc(var(--gutter-x) + .3vw);
-  top: calc(var(--gutter-y) + var(--nav-size) * 2.1);
+  left: calc(var(--gutter-x) + .25vw);
+  top: calc(var(--gutter-y) + var(--nav-size) * 2.5);
   display: flex; flex-direction: column; align-items: flex-start;
-  gap: calc(var(--nav-size) * .55);
+  gap: calc(var(--nav-size) * .5);
   z-index: 3;
 }
 .filters[hidden] { display: none; }
 .filters__item {
   border: 0; background: none; padding: 0; cursor: pointer;
-  font: inherit; font-weight: 700; text-transform: uppercase;
-  font-size: var(--nav-size); line-height: .86; letter-spacing: -0.035em;
+  font: inherit; font-weight: 700; text-transform: uppercase; white-space: nowrap;
+  font-size: calc(var(--nav-size) * .93); line-height: .86; letter-spacing: -0.035em;
   color: var(--red);
-  transform: translateY(-1em); opacity: 0;
-  animation: wordLand .6s var(--groove) forwards;
+  animation: filterLand .6s var(--groove) backwards;
   animation-delay: calc(var(--i, 0) * 45ms);
+  transition: opacity .3s ease, color .35s ease;
 }
-.filters__item.is-on { text-decoration: underline; text-underline-offset: .12em; text-decoration-thickness: .08em; }
-/* on the red part of the screen the filters are black */
+@keyframes filterLand { from { opacity: 0; transform: translateY(-1em); } }
+/* red on the black, black on the red (main.js toggles .on-red from the backdrop's edge); the active
+   one is the only one at full strength */
+.filters__item.on-red { color: var(--black); }
+.filters__item:not(.is-on) { opacity: .62; }
+.filters__item:not(.is-on):hover { opacity: 1; }
 
 /* ---- the list (auge-xp style; all positions come from works.js every frame) ---- */
 .works { position: absolute; inset: 0; }
-.page--projects.menu-open .work__idx, .page--projects.menu-open .work__name { visibility: hidden; }
+.page--projects.menu-open .work__idx, .page--projects.menu-open .work__name, .page--projects.menu-open .work__thumb { visibility: hidden; }
 .page--projects.menu-open .works { pointer-events: none; }
 .work {
   /* no transform / opacity / z-index here: the row must NOT be a stacking context,
@@ -230,7 +238,6 @@ html, body {
 .work__name p  { margin: .05em 0 0; font-size: clamp(12px, 1.3vw, 26px); line-height: 1; letter-spacing: -0.02em; text-transform: uppercase; font-weight: 400; }
 /* the list text blends with what's under it: red on black, black on red, inverted over the image */
 .work__idx, .work__name { mix-blend-mode: difference; }
-[data-page="projects"] .filters__item { mix-blend-mode: difference; color: var(--red); }
 /* nav on Projects: red on the black, black on the red (main.js toggles .on-red-y from the backdrop's edge);
    hover never changes the colour — the letters wave instead (scramble.js) */
 [data-page="projects"] .nav__item, [data-page="projects"] .nav__item:hover { color: var(--red); }
