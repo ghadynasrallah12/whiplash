@@ -160,12 +160,14 @@
     menu.innerHTML = '';
     window.WHIPLASH_HOVER?.(menu, '.filters__item');
     ['All', ...FILTERS].forEach((f, i) => {
-      const b = document.createElement('button');
-      b.type = 'button';
+      // inline spans (not buttons) so the labels run on and wrap like the text block on the slide
+      const b = document.createElement('span');
+      b.setAttribute('role', 'button'); b.tabIndex = 0;
       b.className = 'filters__item' + (i === 0 ? ' is-on' : '');
       b.textContent = f;
-      b.style.setProperty('--i', i);
       b.addEventListener('mouseenter', () => tick(1, 0.55));
+      b.addEventListener('keydown', (e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); b.click(); } });
+      if (i) menu.appendChild(document.createTextNode(' '));
       b.addEventListener('click', () => {
         menu.querySelectorAll('.filters__item').forEach((x) => x.classList.toggle('is-on', x === b));
         items = f === 'All' ? ALL.slice() : ALL.filter((p) => p.tag === f);
