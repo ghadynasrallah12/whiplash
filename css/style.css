@@ -179,7 +179,7 @@ html, body {
 .burger span { display: block; height: calc(var(--nav-size) * .08); background: var(--red); transition: transform .35s var(--groove); transform-origin: left center; }
 .burger.is-open span:nth-child(1), .burger.is-open span:nth-child(3) { transform: scaleX(.78); }
 .burger { user-select: none; -webkit-tap-highlight-color: transparent; outline: none !important; }
-.burger:focus-visible span { background: #fff; }
+.burger span { background: var(--red) !important; }   /* never white: no focus styling on the lines */
 
 /* filters: as on the Keynote slide, one justified block of text under the burger — the labels
    run on and wrap inside a 4.7-label-wide column ("CUTS ON / BEAT", "DIRECTOR'S / CUT FULL / THROTTLE"),
@@ -211,7 +211,8 @@ html, body {
 
 /* ---- the list (auge-xp style; all positions come from works.js every frame) ---- */
 .works { position: absolute; inset: 0; }
-.page--projects.menu-open .work__idx, .page--projects.menu-open .work__name, .page--projects.menu-open .work__thumb { visibility: hidden; }
+/* the list stays while the filters are open; only the left previews step aside (they sit under the menu) */
+.page--projects.menu-open .work__thumb { visibility: hidden; }
 .page--projects.menu-open .works { pointer-events: none; }
 .work {
   /* no transform / opacity / z-index here: the row must NOT be a stacking context,

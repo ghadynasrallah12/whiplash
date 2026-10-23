@@ -200,7 +200,7 @@
     clearTimeout(menuTimer);
     menuTimer = setTimeout(() => { menu.hidden = true; menu.classList.remove('is-closing'); page.classList.remove('menu-open'); }, reduce ? 0 : 520);
   }
-  burger.addEventListener('click', () => (menu.hidden ? openMenu() : closeMenu()));
+  burger.addEventListener('click', () => { (menu.hidden ? openMenu() : closeMenu()); burger.blur(); });
 
   // ---------- scroll sound: a bubble that sinks, with a bass thump (synthesised) -----
   let ac = null;
