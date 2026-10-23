@@ -380,7 +380,7 @@
         glItems.push({
           rect: { x: fx, y: fy + top, w: bigW, h: bottom - top },
           full: { x: fx, y: fy + yImg, w: bigW, h: bigH },
-          src: mediaSrc(items[k % items.length], open), hover: row.hover * open, opacity: gate,
+          src: mediaSrc(items[k % items.length], open), hover: row.hover * open, opacity: gate, lensK: open,
         });
       }
     });

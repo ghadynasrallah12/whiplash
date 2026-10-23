@@ -67,9 +67,13 @@
     uniform float uOpacity;
     uniform float uGray;            // 1 = black & white (the homepage film), 0 = colour
     uniform float uDim;             // brightness (1 = as is; the project detail dims to .55)
+    uniform float uShear;           // filmstrip slices: the picture shears inside the fixed frame (px of y per px of x)
+    uniform vec4 uRect;
     varying vec2 vUv;
     void main() {
-      vec2 uv = vUv * uScale + uOffset;
+      vec2 sv = vUv;
+      sv.y += uShear * (vUv.x - 0.5) * uRect.z / uRect.w;   // same shear per screen pixel whatever the slice height
+      vec2 uv = sv * uScale + uOffset;
       vec4 c = texture2D(map, uv);
       float l = dot(c.rgb, vec3(0.2126, 0.7152, 0.0722));   // same weights as CSS filter: grayscale(1), so the hand-over to the <video> is invisible
       c.rgb = mix(c.rgb, vec3(l), uGray) * uDim;
@@ -120,7 +124,7 @@
     if (!pool[i]) {
       const m = new T.Mesh(geometry, new T.ShaderMaterial({
         vertexShader: vert, fragmentShader: frag, transparent: true, depthTest: false,
-        uniforms: { map: { value: null }, uRect: { value: new T.Vector4() }, uHover: { value: 0 }, uVel: { value: 0 }, uTime: { value: 0 }, uScale: { value: new T.Vector2(1, 1) }, uOffset: { value: new T.Vector2(0, 0) }, uOpacity: { value: 1 }, uGray: { value: 0 }, uDim: { value: 1 }, uMouse: { value: new T.Vector2(-9999, -9999) }, uLens: { value: 0 } },
+        uniforms: { map: { value: null }, uRect: { value: new T.Vector4() }, uHover: { value: 0 }, uVel: { value: 0 }, uTime: { value: 0 }, uScale: { value: new T.Vector2(1, 1) }, uOffset: { value: new T.Vector2(0, 0) }, uOpacity: { value: 1 }, uGray: { value: 0 }, uDim: { value: 1 }, uShear: { value: 0 }, uMouse: { value: new T.Vector2(-9999, -9999) }, uLens: { value: 0 } },
       }));
       m.frustumCulled = false;
       scene.add(m);
@@ -181,13 +185,16 @@
         }
         u.uRect.value.set(it.rect.x, it.rect.y, it.rect.w, it.rect.h);
         u.uHover.value = it.hover;
-        u.uVel.value = it.film ? 0 : vel;
+        u.uVel.value = (it.film || it.full) ? 0 : vel;
         u.uTime.value = time;
         u.uOpacity.value = it.opacity;
         u.uGray.value = it.gray || 0;
         u.uDim.value = it.dim == null ? 1 : it.dim;
         if (mouse) u.uMouse.value.set(mouse.x, mouse.y);
-        u.uLens.value = it.film ? 0 : (lens || 0);
+        u.uLens.value = it.film ? 0 : (lens || 0) * (it.lensK == null ? 1 : it.lensK);
+        // slices stay glued to the frame (no vertex skew, or the two would part and show the backdrop);
+        // the scroll bend becomes a shear of the picture inside the frame instead
+        u.uShear.value = it.full ? vel * 0.12 : 0;
         m.visible = true;
       });
       renderer.render(scene, camera);
