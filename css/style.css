@@ -464,3 +464,26 @@ html.in-detail .nav { visibility: hidden; }
   .hero__media, .nav__item, .page .w { animation: none; opacity: 1; transform: none; }
   .panel, .nav { transition-duration: .01s; }
 }
+
+/* ---------- Cursor: the drunk lens ---------------------- */
+html.has-cur, html.has-cur * { cursor: none !important; }
+.cur { position: fixed; inset: 0; z-index: 9; pointer-events: none; opacity: 0; transition: opacity .3s; --hot: 0; --size: clamp(64px, 6.2vw, 120px); }
+.cur.is-on { opacity: 1; }
+.cur__lens, .cur__ghost, .cur__dot { position: absolute; left: 0; top: 0; border-radius: 50%; will-change: transform; }
+.cur__lens {
+  width: var(--size); height: var(--size);
+  backdrop-filter: blur(9px) saturate(1.25) contrast(1.08);
+  -webkit-backdrop-filter: blur(9px) saturate(1.25) contrast(1.08);
+  box-shadow: inset 0 0 0 1px rgb(255 255 255 / .22), 0 0 0 1px rgb(0 0 0 / .08);
+  background: radial-gradient(circle at 35% 30%, rgb(255 255 255 / .10), rgb(255 255 255 / 0) 60%);
+}
+.cur__ghost {
+  width: var(--size); height: var(--size);
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
+  box-shadow: inset 0 0 0 1px rgb(255 255 255 / .09);
+  opacity: calc(.55 - var(--hot) * .25);
+}
+.cur__dot { width: 7px; height: 7px; background: var(--red); mix-blend-mode: difference; }
+@media (pointer: coarse) { .cur { display: none; } }
+@media (prefers-reduced-motion: reduce) { .cur__ghost { display: none; } }
