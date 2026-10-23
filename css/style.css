@@ -377,7 +377,7 @@ html.in-detail .nav { visibility: hidden; }
 .nav__item.on-red:hover { color: #2a0300; }
 .nav__item--tr, .nav__item--mr, .nav__item--br { will-change: transform; }
 [data-page]:not([data-page="home"]) .nav .nav__item--ml { opacity: 0; pointer-events: none; }
-[data-page="projects"] .nav .nav__item--mr { opacity: 0; pointer-events: none; }
+[data-page="projects"] .nav .nav__item--mr { opacity: 0 !important; visibility: hidden; pointer-events: none; }   /* TEAM is off on Projects, whatever its entrance animation is doing */
 [data-page="projects"] .logo.is-gone { visibility: hidden; }   /* set by main.js once the curtain has reached the logo and it has shrunk away */
 [data-page="about"] .nav .nav__item--mr { opacity: 0; pointer-events: none; }
 .nav__item[aria-current="page"] { cursor: default; }
