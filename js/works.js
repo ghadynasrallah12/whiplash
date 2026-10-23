@@ -184,6 +184,7 @@
       });
       menu.appendChild(b);
     });
+    menu.style.setProperty('--n', wi);   // word count, so the leave can run bottom-up
   }
   let menuTimer = 0;
   function openMenu() {

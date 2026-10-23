@@ -204,7 +204,7 @@ html, body {
   border-bottom: .06em solid transparent; line-height: 1.1;
   animation: fwIn .5s var(--groove) backwards; animation-delay: calc(var(--i, 0) * 38ms);
 }
-.filters.is-closing .fw { animation: fwOut .4s var(--groove) forwards; animation-delay: calc(var(--i, 0) * 26ms); }
+.filters.is-closing .fw { animation: fwOut .4s var(--groove) forwards; animation-delay: calc((var(--n, 12) - 1 - var(--i, 0)) * 26ms); }   /* leaves bottom-up */
 @keyframes fwIn  { from { opacity: 0; transform: translateY(-.55em); } }
 @keyframes fwOut { to   { opacity: 0; transform: translateY(.45em); } }
 .filters__item.is-on .fw, .filters__item:hover .fw, .filters__item:focus-visible .fw { border-bottom-color: currentColor; }
