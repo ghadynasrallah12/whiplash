@@ -16,7 +16,7 @@
 
   const canvas = document.createElement('canvas');
   canvas.className = 'works-gl';
-  page.insertBefore(canvas, list);   // under the rows, above the red/black backdrop
+  page.insertBefore(canvas, page.firstChild);   // first in the page: under the rows, the burger and the filters (they blend with it)
 
   let renderer;
   try {

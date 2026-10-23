@@ -178,8 +178,9 @@ html, body {
 }
 .burger span { display: block; height: calc(var(--nav-size) * .08); background: var(--red); transition: transform .35s var(--groove); transform-origin: left center; }
 .burger.is-open span:nth-child(1), .burger.is-open span:nth-child(3) { transform: scaleX(.78); }
+.burger { user-select: none; -webkit-tap-highlight-color: transparent; }
 .burger:focus { outline: none; }
-.burger:focus-visible span { box-shadow: 0 0 0 2px rgb(255 255 255 / .5); }
+.burger:focus-visible { outline: 2px solid currentColor; outline-offset: 6px; color: var(--red); }
 
 /* filters: as on the Keynote slide, one justified block of text under the burger — the labels
    run on and wrap inside a 4.7-label-wide column ("CUTS ON / BEAT", "DIRECTOR'S / CUT FULL / THROTTLE"),
@@ -192,22 +193,19 @@ html, body {
   font-size: calc(var(--nav-size) * .83); line-height: 1.5; letter-spacing: -0.035em;
   font-weight: 700; text-transform: uppercase;
   text-align: justify; text-align-last: left;
-  z-index: 3;
+  /* no z-index / opacity here: the block must not become a stacking context, or the labels could
+     not blend with the backdrop below (that is what makes them readable on red, on black and on the picture) */
   animation: filterLand .6s var(--groove) backwards;
 }
 .filters[hidden] { display: none; }
 @keyframes filterLand { from { opacity: 0; transform: translateY(-.6em); } }
 .filters__item {
   display: inline; font: inherit; color: var(--red); cursor: pointer; user-select: none;
-  transition: opacity .3s ease, color .35s ease;
+  mix-blend-mode: difference;   /* red on the black, black on the red, inverted over the picture — per pixel, so a label crossing the edge stays readable */
 }
-/* red on the black, black on the red (main.js toggles .on-red from the backdrop's edge); the active
-   one is the only one at full strength */
-.filters__item.on-red { color: var(--black); }
-.filters__item:not(.is-on) { opacity: .62; }
-.filters__item:not(.is-on):hover { opacity: 1; }
+.filters__item.is-on { text-decoration: underline; text-underline-offset: .12em; text-decoration-thickness: .06em; }
+.filters__item:hover { text-decoration: underline; text-underline-offset: .12em; text-decoration-thickness: .06em; }
 .filters__item:focus { outline: none; }
-.filters__item:focus-visible { text-decoration: underline; text-underline-offset: .1em; }
 
 /* ---- the list (auge-xp style; all positions come from works.js every frame) ---- */
 .works { position: absolute; inset: 0; }

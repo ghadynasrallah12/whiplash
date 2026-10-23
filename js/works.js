@@ -46,7 +46,7 @@
   // the middle when you stop. (The reference does this in white/black; ours is red/black.)
   const bg = document.createElement('div');
   bg.className = 'works-bg';
-  page.insertBefore(bg, page.querySelector('.works-gl') || listEl);   // under the GL images and the rows
+  page.insertBefore(bg, page.querySelector('.works-gl') || page.firstChild);   // under the GL sheet and everything else
   const panelTop = () => (parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--panel-top')) || 48) / 100;
   // at rest the line sits just above the active title (the active row is at H/2), so a
   // title never straddles the edge while you read it: black text on red below, red text on black above
@@ -438,14 +438,14 @@
 
   // wheel / keys / touch
   page.addEventListener('wheel', (e) => {
-    if (!isOpen() || !detail.hidden) return;
+    if (!isOpen() || !detail.hidden || !menu.hidden) return;   // no scrolling while the filters are open
     e.preventDefault();
     target += e.deltaY * G.rowsPerWheel;
     push = Math.max(-0.45, Math.min(0.45, push + e.deltaY / window.innerHeight * 1.6));
     lastWheel = performance.now();
   }, { passive: false });
   window.addEventListener('keydown', (e) => {
-    if (!isOpen() || !detail.hidden) return;
+    if (!isOpen() || !detail.hidden || !menu.hidden) return;
     if (e.key === 'ArrowDown') { target = Math.round(target) + 1; lastWheel = 0; push = Math.min(0.45, push + 0.25); }
     if (e.key === 'ArrowUp')   { target = Math.round(target) - 1; lastWheel = 0; push = Math.max(-0.45, push - 0.25); }
     if (e.key === 'Enter') openDetail(items[wrap(Math.round(pos), n) % items.length], wrap(Math.round(pos), n) % items.length);
