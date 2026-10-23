@@ -1,0 +1,466 @@
+/* =========================================================
+   WHIPLASH — base styles
+   ========================================================= */
+
+/* --- Brand font -------------------------------------------
+   Drop the real font files into /fonts and update the
+   @font-face block. Until then the stack falls back to
+   Helvetica Neue Bold, which is visually very close.      */
+@font-face {
+  font-family: "PP Neue Montreal";
+  src: url("../fonts/PPNeueMontreal-Bold.woff2") format("woff2"),
+       url("../fonts/PPNeueMontreal-Bold.otf") format("opentype"),
+       url("../fonts/PPNeueMontreal-Bold.ttf") format("truetype");
+  font-weight: 700;
+  font-style: normal;
+  font-display: swap;
+}
+
+:root {
+  /* One value controls the LEFT and RIGHT gap for everything */
+  --gutter-x: clamp(18px, 1.8vw, 40px);
+  /* Vertical gap (top / bottom) */
+  --gutter-y: clamp(20px, 3.1vh, 48px);
+
+  --red: rgb(204 26 22);   /* brand red (pushed up from Keynote's 171,35,27 so it reads as red on screen) */
+  --red-hover: rgb(230 40 32);
+  --black: #000;
+
+  --font-display: "PP Neue Montreal", "Helvetica Neue", Helvetica, Arial, sans-serif;
+  --nav-size: clamp(20px, 2.5vw, 48px);   /* 39pt on the Keynote slide */
+
+  /* Curtain (page panel) — where its left edge lands, as a share of the viewport */
+  --panel-left: 18.5vw;
+  --panel-top: 48vh;      /* where the bottom curtain (Projects) stops */
+  --curtain: 1.2s cubic-bezier(.7, 0, .22, 1.12);  /* heavy start, lands with a small bump */
+  --groove: cubic-bezier(.34, 1.4, .64, 1);         /* overshoot for the text landing */
+}
+
+*, *::before, *::after { box-sizing: border-box; }
+
+html, body {
+  margin: 0;
+  height: 100%;
+  background: var(--black);
+  color: #fff;
+  font-family: var(--font-display);
+  overflow: hidden; /* landing page is one viewport */
+}
+
+/* ---------- Background --------------------------------- */
+.hero {
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  background: transparent;   /* the page itself is black */
+}
+.hero__media {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: center;
+  filter: grayscale(1);
+  opacity: 0;
+  animation: heroIn 1.6s ease-out .2s forwards;
+}
+@keyframes heroIn { to { opacity: 1; } }
+.hero.is-ready .hero__media { animation: none; opacity: 1; }
+/* Projects: the film is handed to the list's GL sheet (same frame, same second) which shrinks it into the middle */
+.hero.is-handed .hero__media { animation: none; opacity: 0; }
+
+/* ---------- 3D logo canvas ----------------------------- */
+.logo {
+  position: fixed;
+  inset: 0;
+  z-index: 4;   /* above the pages: on Projects the film shrinks under it until the curtain reaches it */
+  width: 100%;
+  height: 100%;
+  display: block;
+  pointer-events: none; /* cursor still reaches the page; JS reads window pointer */
+}
+
+/* ---------- Curtain + pages ----------------------------- */
+.panel {
+  position: fixed;
+  top: 0; right: 0; bottom: 0;
+  left: var(--panel-left);
+  z-index: 2;
+  background: var(--red);
+  transform: translateX(101%);
+  transition: transform var(--curtain);
+  will-change: transform;
+}
+[data-page]:not([data-page="home"]):not([data-page="projects"]) .panel:not(.panel--bottom) { transform: translateX(0); }
+
+/* Projects: the curtain rises from the bottom and stops just under the middle row */
+.panel--bottom {
+  z-index: 1;
+  left: 0; right: 0; bottom: 0;
+  top: var(--panel-top);
+  transform: translateY(101%);
+}
+[data-page="projects"] .panel--bottom { transform: translateY(0); }
+.panel--bottom.is-under { background: transparent; }   /* the projects backdrop paints the red from here on */
+
+.page {
+  position: fixed;
+  top: 0; right: 0; bottom: 0;
+  left: var(--panel-left);
+  z-index: 3;
+  color: var(--black);
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  /* copy starts just under the page label (same gutter, 1.6vh below it), same side gutter as everything else */
+  padding: calc(var(--gutter-y) + var(--nav-size) * .86 + 1.6vh) var(--gutter-x) calc(var(--gutter-y) + var(--nav-size) * 2.4);
+  scrollbar-width: none;
+}
+.page::-webkit-scrollbar { display: none; }
+.page[hidden] { display: none; }
+.page__inner { max-width: 90%; }
+.page__lead {
+  margin: 0 0 1.55em;              /* one blank line between paragraphs, as on the slide */
+  font-weight: 700;
+  text-transform: uppercase;
+  font-size: var(--nav-size);      /* same size as the nav labels (39pt on the slide) */
+  line-height: 1.02;
+  letter-spacing: -0.02em;
+}
+.page__lead:last-child { margin-bottom: 0; }
+/* the small print: one narrow column right under the last paragraph, as on the slide */
+.page__cols {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: .9em;
+  max-width: 42%;
+  margin-top: .45em;
+}
+.page__small {
+  margin: 0;
+  font-weight: 700;
+  text-transform: uppercase;
+  font-size: clamp(12px, 1.25vw, 22px);
+  line-height: 1.06;
+  letter-spacing: -0.01em;
+}
+
+/* word-by-word landing: each word drops in from above with a little bounce */
+.page .w {
+  display: inline-block;
+  transform: translateY(-1.4em);
+  opacity: 0;
+  animation: wordLand .75s var(--groove) forwards;
+  animation-delay: calc(var(--t0, 0s) + var(--i, 0) * 28ms);
+}
+@keyframes wordLand {
+  to { transform: translateY(0); opacity: 1; }
+}
+.page.is-leaving .w {
+  animation: wordDrop .4s cubic-bezier(.4, 0, 1, 1) forwards;
+  animation-delay: calc(var(--i, 0) * 6ms);
+}
+@keyframes wordDrop {
+  to { transform: translateY(1.2em); opacity: 0; }
+}
+
+/* ---------- Projects page ------------------------------- */
+.page--projects { left: 0; padding: 0; overflow: hidden; color: inherit; }
+
+/* burger under HOME */
+.burger {
+  position: absolute;
+  left: var(--gutter-x);
+  top: calc(var(--gutter-y) + var(--nav-size) * 1.15);
+  width: calc(var(--nav-size) * 1.6);
+  height: calc(var(--nav-size) * .7);
+  padding: 0; border: 0; background: none; cursor: pointer;
+  display: flex; flex-direction: column; justify-content: space-between;
+  z-index: 3;
+}
+.burger span { display: block; height: calc(var(--nav-size) * .13); background: var(--red); transition: transform .35s var(--groove), opacity .25s; transform-origin: center; }
+.burger.is-open span:nth-child(1) { transform: translateY(calc(var(--nav-size) * .285)) rotate(45deg); }
+.burger.is-open span:nth-child(2) { opacity: 0; transform: scaleX(.2); }
+.burger.is-open span:nth-child(3) { transform: translateY(calc(var(--nav-size) * -.285)) rotate(-45deg); }
+
+/* filters list drops under the burger */
+.filters {
+  position: absolute;
+  left: calc(var(--gutter-x) + .3vw);
+  top: calc(var(--gutter-y) + var(--nav-size) * 2.1);
+  display: flex; flex-direction: column; align-items: flex-start;
+  gap: calc(var(--nav-size) * .55);
+  z-index: 3;
+}
+.filters[hidden] { display: none; }
+.filters__item {
+  border: 0; background: none; padding: 0; cursor: pointer;
+  font: inherit; font-weight: 700; text-transform: uppercase;
+  font-size: var(--nav-size); line-height: .86; letter-spacing: -0.035em;
+  color: var(--red);
+  transform: translateY(-1em); opacity: 0;
+  animation: wordLand .6s var(--groove) forwards;
+  animation-delay: calc(var(--i, 0) * 45ms);
+}
+.filters__item.is-on { text-decoration: underline; text-underline-offset: .12em; text-decoration-thickness: .08em; }
+/* on the red part of the screen the filters are black */
+
+/* ---- the list (auge-xp style; all positions come from works.js every frame) ---- */
+.works { position: absolute; inset: 0; }
+.page--projects.menu-open .work__idx, .page--projects.menu-open .work__name { visibility: hidden; }
+.page--projects.menu-open .works { pointer-events: none; }
+.work {
+  /* no transform / opacity / z-index here: the row must NOT be a stacking context,
+     otherwise its text can't blend (difference) with the backdrop behind it */
+  position: absolute; left: 0; top: 50%;
+  width: 100%; height: 0;
+}
+.work__thumb, .work__media, .work__idx, .work__name {
+  position: absolute; left: 0; top: 0; margin: 0;
+  will-change: transform;
+}
+.work__thumb { aspect-ratio: 16 / 9; overflow: hidden; transform-origin: left center; translate: 0 -50%; cursor: pointer; }
+.work__thumb img, .work__media img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.work__media { left: 50%; overflow: hidden; background: #111; cursor: pointer; pointer-events: none; }
+.work__idx { pointer-events: none;   /* numbers: no hover effect, nothing to click */
+  width: 8vw; text-align: right; translate: -100% -50%;
+  font-weight: 400; font-size: clamp(12px, 1.25vw, 24px); letter-spacing: -0.02em;
+  color: var(--red); transition: color .3s; cursor: pointer;
+}
+.work__name { translate: 0 -50%; transform-origin: left center; white-space: nowrap; color: var(--red); transition: color .3s; cursor: pointer; }
+.work__name h3 { margin: 0; font-size: var(--nav-size); line-height: .9; letter-spacing: -0.035em; text-transform: uppercase; font-weight: 700; }
+.work__name p  { margin: .05em 0 0; font-size: clamp(12px, 1.3vw, 26px); line-height: 1; letter-spacing: -0.02em; text-transform: uppercase; font-weight: 400; }
+/* the list text blends with what's under it: red on black, black on red, inverted over the image */
+.work__idx, .work__name { mix-blend-mode: difference; }
+[data-page="projects"] .filters__item { mix-blend-mode: difference; color: var(--red); }
+/* nav on Projects: red on the black, black on the red (main.js toggles .on-red-y from the backdrop's edge);
+   hover never changes the colour — the letters wave instead (scramble.js) */
+[data-page="projects"] .nav__item, [data-page="projects"] .nav__item:hover { color: var(--red); }
+[data-page="projects"] .nav__item.on-red-y, [data-page="projects"] .nav__item.on-red-y:hover { color: var(--black); }
+.nav__item .sc { display: inline-block; }
+/* GL sheet replaces the plain image once WebGL is up */
+.works-gl { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; }
+.page--projects.gl .work__media { background: transparent; }
+.page--projects.gl .work__media img { visibility: hidden; }
+/* "View project" label riding the cursor over the image */
+.cursor-label {
+  position: fixed; left: 0; top: 0; z-index: 5; pointer-events: none;
+  padding: .35em .9em; background: var(--red); color: var(--black);
+  font-weight: 700; text-transform: uppercase; font-size: clamp(12px, 1.1vw, 20px); letter-spacing: -0.01em;
+  transform: translate(-50%, -50%) rotate(-7deg) scale(0); opacity: 0;
+  transition: transform .35s var(--groove), opacity .25s;
+}
+.cursor-label.is-on { transform: translate(-50%, -50%) rotate(-7deg) scale(1); opacity: 1; }
+/* entrance: rows land from above */
+.works { opacity: 0; }            /* rows wait for the curtain (opacity 1 below: not a stacking context, so the blend survives) */
+.works.is-in, .works.is-out { opacity: 1; }
+/* land / leave animate `translate` (compositor only, no layout); the idx and the name each keep their own base offset */
+.works.is-in .work__idx   { animation: idxLand .7s var(--groove) backwards; }
+.works.is-in .work__name, .works.is-in .work__thumb  { animation: nameLand .7s var(--groove) backwards; }
+.works.is-out .work__idx  { animation: idxLeave .45s var(--groove) forwards; }
+.works.is-out .work__name, .works.is-out .work__thumb { animation: nameLeave .45s var(--groove) forwards; }
+@keyframes idxLand   { from { opacity: 0; translate: -100% calc(-50% - 2.5vh); } to { translate: -100% -50%; } }
+@keyframes nameLand  { from { opacity: 0; translate: 0 calc(-50% - 2.5vh); } to { translate: 0 -50%; } }
+@keyframes idxLeave  { to { opacity: 0; translate: -100% calc(-50% + 3vh); } }
+@keyframes nameLeave { to { opacity: 0; translate: 0 calc(-50% + 3vh); } }
+
+/* backdrop: the red below a liquid boundary (works.js reshapes its clip-path every frame) */
+.works-video { position: absolute; left: 0; top: 0; width: 2px; height: 2px; opacity: 0; pointer-events: none; }   /* texture sources for the GL sheet (kept in the DOM so they keep decoding) */
+.works-bg { position: absolute; inset: 0; background: var(--red); pointer-events: none; opacity: 0; clip-path: polygon(0 var(--panel-top), 100% var(--panel-top), 100% 100%, 0 100%); }
+.page--projects.is-bg .works-bg { opacity: 1; }
+/* on Projects the film is off: black above, red below */
+
+/* ---- hover: the word grows, its letters ripple, a pill slides in behind it ---- */
+.nav__item, .filters__item, .work__name h3 { transition: font-size .35s var(--groove), color .35s ease; }
+.work__name.is-hover h3 { font-size: calc(var(--nav-size) * 1.12); }
+.sc--wave { animation: letterWave .9s ease-in-out both; animation-delay: calc(var(--i, 0) * 45ms); }
+@keyframes letterWave { 0% { transform: translateY(0); } 30% { transform: translateY(-.22em); } 60% { transform: translateY(.08em); } 100% { transform: translateY(0); } }
+/* ---- letter scramble ---- */
+.sc { display: inline-block; }
+.sc--i { font-style: italic; }
+.sc--l { font-weight: 400; }
+
+/* ---- project detail ---- */
+.wd {
+  position: fixed; inset: 0; z-index: 6;
+  color: #fff; background: transparent;   /* the background is the project's picture growing on the GL sheet underneath */
+  opacity: 0; transition: opacity .45s ease;
+  padding: var(--gutter-y) var(--gutter-x);
+}
+.wd.is-in { opacity: 1; }
+.wd[hidden] { display: none; }
+.wd__bg, .wd__video { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; filter: grayscale(1) brightness(.55); background: #000; }   /* fallback without WebGL */
+.wd__bg[hidden] { display: none; }
+html.in-detail .cursor-label { opacity: 0 !important; }
+html.in-detail .burger { visibility: hidden; }
+.wd__video[hidden] { display: none; }
+.wd__back { position: absolute; left: var(--gutter-x); top: var(--gutter-y); width: clamp(56px, 7.3vw, 140px); height: auto; padding: 0; border: 0; background: none; color: var(--red); cursor: pointer; z-index: 2; transition: transform .35s var(--groove), color .3s; }
+.wd__back:hover { transform: translateX(-6%); }
+.wd__back svg { width: 100%; display: block; overflow: visible; }
+.wd__back:hover { color: var(--red-hover); }
+.wd__head {
+  position: absolute; left: var(--gutter-x); top: 18vh;
+  display: flex; align-items: flex-start; gap: calc(var(--nav-size) * 4.5);
+}
+.wd__idx { font-size: clamp(12px, 1.25vw, 24px); letter-spacing: -0.02em; padding-top: .3em; }
+.wd__name { margin: 0; font-size: var(--nav-size); line-height: .9; letter-spacing: -0.035em; text-transform: uppercase; font-weight: 700; }
+.wd__type { margin: .08em 0 0; font-size: clamp(12px, 1.3vw, 26px); line-height: 1; letter-spacing: -0.02em; text-transform: uppercase; font-weight: 400; }
+.wd__left { position: absolute; left: var(--gutter-x); top: 24vh; width: 34vw; display: flex; flex-direction: column; gap: 2vh; }
+.wd__logo { width: 34vw; max-width: 680px; }
+.wd__award { width: 16vw; max-width: 320px; }
+.wd__left img[hidden] { display: none; }
+.wd__right { position: absolute; left: 56.5%; top: 18vh; width: calc(100% - 56.5% - var(--gutter-x)); }
+.wd__desc { margin: 0 0 2.6vh; font-size: clamp(12px, 1.3vw, 26px); line-height: 1.05; letter-spacing: -0.02em; text-transform: uppercase; font-weight: 400; max-width: 42vw; }
+.wd__link {
+  display: block; width: clamp(96px, 9.5vw, 190px); height: auto; margin: .6vh 0 0 -0.4vw;
+  color: #fff; text-decoration: none;
+}
+.wd__disc { width: 100%; height: auto; display: block; overflow: visible; }
+.wd__ringtext { font-size: 13px; font-weight: 700; letter-spacing: .1em; fill: #fff; text-transform: uppercase; }
+.wd__ring  { transform-origin: 100px 100px; animation: discSpin 14s linear infinite; }
+.wd__vinyl { transform-origin: 100px 100px; animation: discSpin 2.4s linear infinite; animation-play-state: paused; transition: transform .5s var(--groove); }
+.wd__play  { transform-origin: 100px 100px; transition: transform .35s var(--groove); }
+.wd__link:hover .wd__ring  { animation-duration: 4s; }
+.wd__link:hover .wd__vinyl { animation-play-state: running; }
+.wd__link:hover .wd__play  { transform: scale(1.25); }
+.wd__link:hover .wd__disc  { filter: drop-shadow(0 0 18px rgb(204 26 22 / .55)); }
+@keyframes discSpin { to { transform: rotate(360deg); } }
+.wd__link[hidden] { display: none; }
+.wd__credits { margin-top: 9vh; display: grid; grid-template-columns: max-content max-content; column-gap: 7vw; row-gap: .55em; font-size: clamp(12px, 1.3vw, 26px); letter-spacing: -0.02em; text-transform: uppercase; }
+.wd__row { display: contents; }
+.wd__row span { display: block; transform: translateY(-1em); opacity: 0; }
+.wd.is-in .wd__row span { animation: wordLand .6s var(--groove) forwards; animation-delay: calc(.5s + var(--i, 0) * 45ms); }
+.wd.is-in .wd__head, .wd.is-in .wd__left, .wd.is-in .wd__desc, .wd.is-in .wd__link { animation: wordLand .7s var(--groove) both; }
+.wd.is-in .wd__desc { animation-delay: .15s; } .wd.is-in .wd__link { animation-delay: .3s; }
+html.in-detail .nav { visibility: hidden; }
+
+/* ---------- Nav ---------------------------------------- */
+.nav {
+  position: fixed;
+  inset: 0;
+  z-index: 4;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  grid-template-rows: 1fr 1fr 1fr;
+  padding: var(--gutter-y) var(--gutter-x);
+  pointer-events: none;
+}
+.nav__item {
+  pointer-events: auto;
+  color: var(--red);
+  text-decoration: none;
+  text-transform: uppercase;
+  font-weight: 700;
+  font-size: var(--nav-size);
+  line-height: .86;
+  letter-spacing: -0.035em;
+  transition: color .6s ease, transform .35s cubic-bezier(.2,.8,.2,1), visibility .5s;
+  opacity: 0;
+  transform: translateY(12px);
+  animation: navIn .9s cubic-bezier(.2,.8,.2,1) forwards;
+  animation-delay: calc(.35s + var(--d, 0) * .08s);
+}
+.nav__item:hover,
+.nav__item:focus-visible { color: var(--red-hover); outline: none; }
+
+.nav__item[data-i="1"] { --d: 0; }
+.nav__item[data-i="2"] { --d: 1; }
+.nav__item[data-i="3"] { --d: 2; }
+.nav__item[data-i="4"] { --d: 3; }
+.nav__item[data-i="5"] { --d: 4; }
+.nav__item[data-i="6"] { --d: 5; }
+
+@keyframes navIn { to { opacity: 1; transform: translateY(0); } }
+
+/* page open (desktop): the right-column labels are carried along by the curtain's edge
+   (main.js moves them with a transform every frame) and go black once they're on the red.
+   CLIENTS gives its spot to the logo; TEAM makes room for the copy on About. */
+.nav__item.on-red { color: var(--black); }
+.nav__item.on-red:hover { color: #2a0300; }
+.nav__item--tr, .nav__item--mr, .nav__item--br { will-change: transform; }
+[data-page]:not([data-page="home"]) .nav .nav__item--ml { opacity: 0; pointer-events: none; }
+[data-page="projects"] .nav .nav__item--mr { opacity: 0; pointer-events: none; }
+[data-page="projects"] .logo.is-gone { visibility: hidden; }   /* set by main.js once the curtain has reached the logo and it has shrunk away */
+[data-page="about"] .nav .nav__item--mr { opacity: 0; pointer-events: none; }
+.nav__item[aria-current="page"] { cursor: default; }
+
+.nav__item.is-in { animation: none; opacity: 1; transform: none; }
+.nav__item { transition: color .35s ease, opacity .45s ease; }
+[data-page]:not([data-page="home"]):not([data-page="projects"]) .nav__item--tr:hover,
+[data-page]:not([data-page="home"]):not([data-page="projects"]) .nav__item--mr:hover,
+[data-page]:not([data-page="home"]):not([data-page="projects"]) .nav__item--br:hover { color: #2a0300; }
+/* as on the Keynote slide: the logo takes CLIENTS' place, TEAM makes room for the copy,
+   and CONTACT US sits a little further in than the gutter */
+[data-page]:not([data-page="home"]) .nav__item--ml { visibility: hidden; pointer-events: none; }
+[data-page="about"] .nav__item--mr { visibility: hidden; pointer-events: none; }
+[data-page]:not([data-page="home"]) .nav__item--br { padding-left: calc(5.2vw - var(--gutter-x)); }
+.nav__item[aria-current="page"] { cursor: default; }
+
+/* line break inside "Contact Us" that turns into a space on the compact phone nav */
+.nav__item .br::before { content: "\A"; white-space: pre; }
+.nav__item .sc { display: inline; }
+
+/* positions */
+.nav__item--tl { grid-area: 1 / 1; justify-self: start; align-self: start; }
+.nav__item--tr { grid-area: 1 / 2; justify-self: end;   align-self: start; text-align: right; }
+.nav__item--ml { grid-area: 2 / 1; justify-self: start; align-self: center; }
+.nav__item--mr { grid-area: 2 / 2; justify-self: end;   align-self: center; text-align: right; }
+.nav__item--bl { grid-area: 3 / 1; justify-self: start; align-self: end; }
+.nav__item--br { grid-area: 3 / 2; justify-self: end;   align-self: end; text-align: right; }
+
+/* ---------- Mobile ------------------------------------- */
+@media (max-width: 760px) {
+  :root {
+    --gutter-x: 20px;
+    --gutter-y: 28px;
+    --nav-size: clamp(22px, 6.2vw, 26px);
+  }
+  .hero__media { object-position: 30% 50%; }
+  :root { --panel-left: 0px; }
+  /* page open on a phone: the nav collapses into two compact rows at the top,
+     the logo tucks under them, the copy starts below */
+  [data-page]:not([data-page="home"]) .nav {
+    grid-template-columns: repeat(3, auto);
+    grid-template-rows: auto auto;
+    justify-content: start;
+    align-content: start;
+    gap: 6px 18px;
+    transition: none;
+  }
+  [data-page]:not([data-page="home"]) .nav .nav__item {
+    grid-area: auto;
+    justify-self: start;
+    align-self: start;
+    text-align: left;
+    padding-left: 0;
+    font-size: 15px;
+    color: var(--black);
+    opacity: 1;
+    pointer-events: auto;
+    transform: none !important;
+  }
+  [data-page]:not([data-page="home"]) .nav .nav__item .br::before { content: " "; white-space: normal; }
+  [data-page]:not([data-page="home"]) .nav .nav__item[aria-current="page"] { text-decoration: underline; text-underline-offset: 3px; }
+  .page { padding-top: 36vh; padding-bottom: 12vh; }
+  .page__inner, .page__cols { max-width: 100%; }
+  .page__cols { gap: 1em; }
+  .page__lead { font-size: clamp(22px, 6.4vw, 30px); }
+  :root { --panel-top: 42vh; }
+  .page--projects { padding: 0; }
+  .burger { top: calc(var(--gutter-y) + 48px); width: 30px; height: 16px; }
+  .burger span { height: 3px; }
+  .filters { top: calc(var(--gutter-y) + 76px); gap: 10px; }
+  .filters__item { font-size: 18px; }
+  .work__name h3 { font-size: 18px; } .work__name p, .work__idx { font-size: 11px; }
+  .work__name { transform: translate(-100%, -50%); }
+  .wd__head { top: 14vh; gap: 24px; flex-direction: column; }
+  .wd__left { top: auto; bottom: 8vh; width: 60vw; } .wd__logo { width: 60vw; } .wd__award { width: 34vw; }
+  .wd__right { left: var(--gutter-x); top: 30vh; width: calc(100% - var(--gutter-x) * 2); }
+  .wd__desc { max-width: 100%; font-size: 13px; }
+  .wd__link { width: 84px; }
+  .wd__credits { margin-top: 4vh; font-size: 12px; column-gap: 8vw; }
+  .page__small { font-size: 14px; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .hero__media, .nav__item, .page .w { animation: none; opacity: 1; transform: none; }
+  .panel, .nav { transition-duration: .01s; }
+}

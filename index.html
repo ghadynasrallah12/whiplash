@@ -1,0 +1,121 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>Whiplash</title>
+  <meta name="description" content="Whiplash — post-production studio.">
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body data-page="home">
+
+  <!-- Background film (assets/hero.mp4 is a placeholder — drop the real reel in its place; hero-poster.jpg is its first frame) -->
+  <div class="hero" aria-hidden="true">
+    <video class="hero__media" autoplay muted loop playsinline preload="auto" poster="assets/hero-poster.jpg">
+      <source src="assets/hero.mp4" type="video/mp4">
+    </video>
+  </div>
+
+  <!-- 3D logo canvas -->
+  <canvas id="logo" class="logo" aria-label="Whiplash logo"></canvas>
+
+  <!-- Red curtains: from the right for About/Clients/Team/Contact, from the bottom for Projects -->
+  <div class="panel" aria-hidden="true"></div>
+  <div class="panel panel--bottom" aria-hidden="true"></div>
+
+  <!-- Pages: each one lives inside the curtain -->
+  <section class="page" id="page-about" aria-labelledby="nav-about" hidden>
+    <div class="page__inner">
+      <p class="page__lead" data-drop>We come from music, not film. That's why we care so much about timing. If it doesn't feel right, we don't move on.</p>
+      <p class="page__lead" data-drop>Whiplash is a post-production studio that believes in the power of precision-driven storytelling where every frame is intentional, every cut has weight, and every detail exists.</p>
+      <p class="page__lead" data-drop>We combine strong creative direction with disciplined execution.</p>
+      <div class="page__cols">
+        <p class="page__small" data-drop>Driven by sound design as much as image, we shape a complete sensory experience; where audio and visuals work seamlessly and land deeply, memorably and with impact.</p>
+        <p class="page__small" data-drop>From offline to online edit, VFX, grading, and full creative direction, we shape every stage of the process; designing rhythm, flow, visual language, and sound to create films that don't just tell stories, but stay with people.</p>
+      </div>
+    </div>
+  </section>
+
+  <section class="page" id="page-clients" aria-labelledby="nav-clients" hidden>
+    <div class="page__inner"><p class="page__lead" data-drop>Clients — coming next.</p></div>
+  </section>
+  <section class="page" id="page-team" aria-labelledby="nav-team" hidden>
+    <div class="page__inner"><p class="page__lead" data-drop>Team — coming next.</p></div>
+  </section>
+  <section class="page page--projects" id="page-projects" aria-labelledby="nav-projects" hidden>
+    <!-- burger under HOME → filters -->
+    <button class="burger" id="burger" type="button" aria-label="Filter projects" aria-expanded="false" aria-controls="filters">
+      <span></span><span></span><span></span>
+    </button>
+    <div class="filters" id="filters" hidden></div>
+
+    <!-- the fan list (rows are generated from js/works-data.js) -->
+    <div class="works" aria-label="Projects"></div>
+    <span class="cursor-label" aria-hidden="true">View project</span>
+
+    <!-- project detail -->
+    <div class="wd" id="work-detail" hidden>
+      <img class="wd__bg" src="" alt="">
+      <video class="wd__video" muted loop playsinline hidden></video>
+      <button class="wd__back" type="button" aria-label="Back to projects">
+        <!-- solid arrow, traced from the Keynote slide: triangular head + 14/56 bar -->
+        <svg viewBox="0 0 220 56" aria-hidden="true"><path d="M0 28L56 0v21h164v14H56v21z" fill="currentColor"/></svg>
+      </button>
+      <div class="wd__head">
+        <span class="wd__idx"></span>
+        <div><h2 class="wd__name"></h2><p class="wd__type"></p></div>
+      </div>
+      <div class="wd__left">
+        <img class="wd__logo" src="" alt="" hidden>
+        <img class="wd__award" src="" alt="" hidden>
+      </div>
+      <div class="wd__right">
+        <p class="wd__desc"></p>
+        <!-- "drop the needle": a spinning record with a play button, ringed by rotating text -->
+        <a class="wd__link" href="#" target="_blank" rel="noopener" aria-label="Watch the full film on Vimeo">
+          <svg class="wd__disc" viewBox="0 0 200 200" aria-hidden="true">
+            <defs>
+              <path id="wd-ring" d="M100 100 m-78 0 a78 78 0 1 1 156 0 a78 78 0 1 1 -156 0"/>
+            </defs>
+            <g class="wd__ring">
+              <text class="wd__ringtext" textLength="488" lengthAdjust="spacing"><textPath href="#wd-ring" startOffset="0" textLength="488" lengthAdjust="spacing">FULL FILM • ON VIMEO • FULL FILM • ON VIMEO •</textPath></text>
+            </g>
+            <g class="wd__vinyl">
+              <circle cx="100" cy="100" r="60" fill="#0a0a0a"/>
+              <g fill="none" stroke="#fff" stroke-opacity=".16" stroke-width="1">
+                <circle cx="100" cy="100" r="56"/><circle cx="100" cy="100" r="50"/><circle cx="100" cy="100" r="44"/><circle cx="100" cy="100" r="38"/><circle cx="100" cy="100" r="32"/>
+              </g>
+              <path d="M100 40a60 60 0 0 1 42 17" fill="none" stroke="#fff" stroke-opacity=".5" stroke-width="2" stroke-linecap="round"/>
+              <path d="M100 160a60 60 0 0 1 -42 -17" fill="none" stroke="#fff" stroke-opacity=".5" stroke-width="2" stroke-linecap="round"/>
+              <circle cx="100" cy="100" r="22" fill="var(--red)"/>
+              <circle cx="100" cy="100" r="3" fill="#0a0a0a"/>
+            </g>
+            <path class="wd__play" d="M93 88l20 12-20 12z" fill="#fff"/>
+          </svg>
+        </a>
+        <div class="wd__credits"></div>
+      </div>
+    </div>
+  </section>
+  <section class="page" id="page-contact" aria-labelledby="nav-contact" hidden>
+    <div class="page__inner"><p class="page__lead" data-drop>Contact — coming next.</p></div>
+  </section>
+
+  <!-- Nav: 3 rows × 2 columns, same gutter on every side -->
+  <nav class="nav" aria-label="Main">
+    <a class="nav__item nav__item--tl" id="nav-home"     href="#home"     data-page="home"     data-i="1">Home</a>
+    <a class="nav__item nav__item--tr" id="nav-about"    href="#about"    data-page="about"    data-i="2">About</a>
+    <a class="nav__item nav__item--ml" id="nav-clients"  href="#clients"  data-page="clients"  data-i="3">Clients</a>
+    <a class="nav__item nav__item--mr" id="nav-team"     href="#team"     data-page="team"     data-i="4">Team</a>
+    <a class="nav__item nav__item--bl" id="nav-projects" href="#projects" data-page="projects" data-i="5">Projects</a>
+    <a class="nav__item nav__item--br" id="nav-contact"  href="#contact"  data-page="contact"  data-i="6">Contact<span class="br"></span>Us</a>
+  </nav>
+
+  <script src="js/logo3d.js" defer></script>
+  <script src="js/scramble.js" defer></script>
+  <script src="js/works-data.js" defer></script>
+  <script src="js/gl-media.js" defer></script>
+  <script src="js/works.js" defer></script>
+  <script src="js/main.js" defer></script>
+</body>
+</html>
