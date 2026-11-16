@@ -890,8 +890,13 @@
     contact.hidden = false; contact.classList.add('is-in', 'is-solid', 'is-content');
     wmIntro(true); paintTimes();
   }
+  // strips back off-screen and nothing drawn, so the word can never show before the page has come in
+  function wmReset() {
+    wm.forEach(function (b, k) { b.settled = false; b.fast = false; b.x = b.target = (k % 2 ? 1 : -1) * (wmGeo.W || innerWidth) * (1.05 + k * .05); });
+    wmCtx.setTransform(1, 0, 0, 1, 0, 0); wmCtx.clearRect(0, 0, wmCanvas.width, wmCanvas.height);
+  }
   function openContact(done) {
-    contactClear(); contactBusy = true;
+    contactClear(); contactBusy = true; wmReset();
     contact.hidden = false; contact.classList.remove('is-in', 'is-solid', 'is-content', 'is-out', 'is-closing'); void contact.offsetWidth;
     contact.classList.add('is-in'); tick(1, .55); paintTimes();          // the dark strips slide in…
     contactT.push(setTimeout(function () { contact.classList.add('is-solid', 'is-content'); wmIntro(false); }, 620));   // …then the page builds
@@ -901,7 +906,7 @@
     contactClear(); clearTimeout(wmGlitchT);
     contact.classList.add('is-closing');
     contactT.push(setTimeout(function () { contact.classList.remove('is-solid', 'is-content'); contact.classList.add('is-out'); tick(-1, .5); }, 180));   // strips slide away
-    contactT.push(setTimeout(function () { contact.hidden = true; contact.classList.remove('is-in', 'is-out', 'is-closing'); contactBusy = false; if (done) done(); }, 900));
+    contactT.push(setTimeout(function () { contact.hidden = true; contact.classList.remove('is-in', 'is-out', 'is-closing'); wmReset(); contactBusy = false; if (done) done(); }, 900));
   }
   // local time in each office
   var tzFmt = {};

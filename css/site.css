@@ -388,6 +388,7 @@ body[data-scene=contact] .nav a:hover, body[data-scene=contact] .nav a[aria-curr
 .contact.is-out .contact__shut i { transform: translateX(calc(var(--from) * -1)); transition-delay: calc((6 - var(--k)) * 40ms); }
 .contact.is-solid .contact__shut { visibility: hidden; }
 
+.contact:not(.is-content) .wm { visibility: hidden; }   /* the word only appears once the dark page is in */
 .wm { position: absolute; left: 0; top: 13.97vh; width: 100vw; height: min(23.1vh, calc(93vw / 7.07)); display: block; }
 
 .cta { position: absolute; margin: 0; left: var(--ax); top: 53.6vh; font-weight: 500; font-size: min(8.1vw, 14.4vh); line-height: .99; letter-spacing: -.015em; text-transform: uppercase; }
