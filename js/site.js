@@ -103,7 +103,7 @@
   // scramble(el, text): each letter runs through random capitals, left to right, flipping
   // italic / light while it runs, with a small wave through the word.
   var scTimers = new WeakMap(), ABC = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
-  function scramble(el, text, chars) {
+  function scramble(el, text, chars, lag) {
     chars = chars || ABC;
     if (!el) return;
     if (reduce) { el.textContent = text; return; }
@@ -115,7 +115,7 @@
       var sp = document.createElement('span'); sp.className = 'sc sc--wave'; sp.style.setProperty('--i', n++); sp.textContent = ch; el.appendChild(sp);
       cells.push({ s: sp, ch: ch, style: Math.random() < .45 ? ' sc--i' : Math.random() < .5 ? ' sc--l' : '' });
     });
-    var t = 0, PER = 5, LAG = 2;
+    var t = 0, PER = 5, LAG = lag || 2;
     var id = setInterval(function () {
       var done = true;
       cells.forEach(function (c, i) {
@@ -167,22 +167,94 @@
   var chapter = 0, chTrack, chImg = document.getElementById('ch-img'), chCap = document.getElementById('ch-cap'), plate = document.querySelector('.plate');
   function two(n) { return (n < 10 ? '0' : '') + n; }
 
-  // the red cubes over the photo
-  var cubes = document.getElementById('cubes'), CUBES = 20, coverT;
-  for (var q = 0; q < CUBES; q++) cubes.appendChild(document.createElement('i'));
-  function coverPlate() { clearTimeout(coverT); for (var k = 0; k < CUBES; k++) cubes.children[k].classList.remove('is-out'); }
+  // ---------- the photo's lock: red blocks over a black-and-white photo, cracked open like a safe ----------
+  // Locked: a blocky red pattern sits over the photo. Then a scan line sweeps down, the blocks it passes
+  // start running codes, and they break open one by one (a dial click each) until the photo is clear.
+  var cubes = document.getElementById('cubes'), COLS = 8, ROWS = 10, CELLS = COLS * ROWS, lockTimers = [], codeT = 0;
+  for (var q = 0; q < CELLS; q++) { var cell = document.createElement('i'); cell.appendChild(document.createElement('b')); cubes.appendChild(cell); }
+  var scan = document.createElement('span'); scan.className = 'plate__scan'; cubes.appendChild(scan);
+  function lockLater(fn, ms) { lockTimers.push(setTimeout(fn, ms)); }
+  function clearLock() { lockTimers.forEach(clearTimeout); lockTimers = []; clearInterval(codeT); cubes.classList.remove('is-scanning'); }
+  // a blocky pattern: smooth noise thresholded on the grid, so the red forms clusters rather than confetti
+  function pattern() {
+    var p = [], a = Math.random() * 6, b = Math.random() * 6, c = Math.random() * 6;
+    for (var r = 0; r < ROWS; r++) for (var k = 0; k < COLS; k++) {
+      var v = Math.sin(k * 2.2 + a) + Math.sin(r * 1.8 + b) + .8 * Math.sin((k - r) * 1.3 + c) + (Math.random() - .5) * .8;
+      p.push(v > .2);
+    }
+    return p;
+  }
+  function cellAt(n) { return cubes.children[n]; }
+  // everything red (used while the picture underneath is swapped)
+  function coverPlate() {
+    clearLock();
+    for (var n = 0; n < CELLS; n++) { var c = cellAt(n); c.className = 'is-red'; c.firstChild.textContent = ''; }
+  }
+  var HEX = '0123456789ABCDEF';
+  function code() { return HEX[(Math.random() * 16) | 0] + HEX[(Math.random() * 16) | 0]; }
   function revealPlate(wait) {
-    clearTimeout(coverT);
+    clearLock();
     var go = function () {
-      if (reduce) { for (var k = 0; k < CUBES; k++) { cubes.children[k].style.setProperty('--d', '0ms'); cubes.children[k].classList.add('is-out'); } return; }
-      // random order: a few go early, most in the middle, a few hang on to the end
-      var order = []; for (var k2 = 0; k2 < CUBES; k2++) order.push(k2);
-      order.sort(function () { return Math.random() - .5; });
-      order.forEach(function (idx, n) { var c = cubes.children[idx]; c.style.setProperty('--d', Math.round(n * 62 + Math.random() * 90) + 'ms'); c.classList.add('is-out'); });
+      var cells = []; for (var n = 0; n < CELLS; n++) cells.push(cellAt(n));
+      if (reduce) { cells.forEach(function (c) { c.className = ''; }); return; }
+      // 1) locked: only the pattern stays red
+      var p = pattern();
+      cells.forEach(function (c, n) { c.className = p[n] ? 'is-red' : ''; c.firstChild.textContent = ''; });
+      var red = cells.filter(function (c, n) { return p[n]; });
+      var cap = chCap.textContent, total = red.length, opened = 0, HOLD = 650, SCAN = 750;
+      // 2) scan: blocks start running codes as the line passes them
+      lockLater(function () {
+        cubes.classList.add('is-scanning'); lockClick(.5, 1);
+        red.forEach(function (c) { var row = Math.floor(cells.indexOf(c) / COLS); lockLater(function () { c.classList.add('is-code'); }, row / ROWS * SCAN); });
+        codeT = setInterval(function () { red.forEach(function (c) { if (c.classList.contains('is-code') && !c.classList.contains('is-open')) c.firstChild.textContent = code(); }); }, 55);
+      }, HOLD);
+      // 3) brute force: blocks crack open one by one, top to bottom with some chance in it
+      var order = red.map(function (c) { return { c: c, k: Math.floor(cells.indexOf(c) / COLS) + Math.random() * 4 }; }).sort(function (x, y) { return x.k - y.k; });
+      var start = HOLD + SCAN * .55, step = Math.max(14, Math.min(34, 1100 / Math.max(total, 1)));
+      order.forEach(function (o, n) {
+        lockLater(function () {
+          o.c.classList.add('is-open'); opened++;
+          if (n % 2 === 0) lockClick(.35 + Math.random() * .25, 1 + Math.random() * .3);
+          chCap.textContent = 'Unlocking ' + Math.round(opened / total * 100) + '%';
+        }, start + n * step + Math.random() * step);
+      });
+      // 4) open: one heavy click, the caption decodes back
+      lockLater(function () {
+        clearInterval(codeT); cubes.classList.remove('is-scanning');
+        cells.forEach(function (c) { c.className = ''; });
+        lockClunk(); scramble(chCap, cap, null, 1);
+      }, start + total * step + step + 260);
     };
-    // wait for the picture itself, so the cubes never lift off an empty box
+    // wait for the picture itself, so nothing unlocks over an empty box
     var ready = chImg.complete || !chImg.getAttribute('src') ? Promise.resolve() : new Promise(function (r) { chImg.onload = chImg.onerror = r; setTimeout(r, 4000); });
-    ready.then(function () { coverT = setTimeout(go, wait || 0); });
+    ready.then(function () { lockLater(go, wait || 0); });
+  }
+  // sounds of the lock: dial clicks and the bolt (silent when Sound is off)
+  var lastLockClick = 0;
+  function lockClick(vol, pitch) {
+    if (reduce || !ac || !soundOn || ac.state !== 'running') return;
+    var now = performance.now(); if (now - lastLockClick < 22) return; lastLockClick = now;
+    try {
+      var t = ac.currentTime, len = Math.floor(ac.sampleRate * .012), buf = ac.createBuffer(1, len, ac.sampleRate), d = buf.getChannelData(0);
+      for (var i = 0; i < len; i++) d[i] = (Math.random() * 2 - 1) * Math.pow(1 - i / len, 4);
+      var src = ac.createBufferSource(), bp = ac.createBiquadFilter(), g = ac.createGain();
+      src.buffer = buf; bp.type = 'bandpass'; bp.frequency.value = 2400 * pitch; bp.Q.value = 6; g.gain.value = .9 * vol;
+      src.connect(bp).connect(g).connect(ac.destination); src.start(t);
+      var o = ac.createOscillator(), og = ac.createGain();
+      o.type = 'square'; o.frequency.value = 3600 * pitch; og.gain.setValueAtTime(.04 * vol, t); og.gain.exponentialRampToValueAtTime(.0001, t + .01);
+      o.connect(og).connect(ac.destination); o.start(t); o.stop(t + .012);
+    } catch (e) { /* no audio */ }
+  }
+  function lockClunk() {
+    if (reduce || !ac || !soundOn || ac.state !== 'running') return;
+    try {
+      var t = ac.currentTime + .01;
+      var o = ac.createOscillator(), g = ac.createGain();
+      o.type = 'sine'; o.frequency.setValueAtTime(120, t); o.frequency.exponentialRampToValueAtTime(42, t + .18);
+      g.gain.setValueAtTime(.0001, t); g.gain.exponentialRampToValueAtTime(.6, t + .005); g.gain.exponentialRampToValueAtTime(.0001, t + .3);
+      o.connect(g).connect(ac.destination); o.start(t); o.stop(t + .32);
+      lockClick(.9, .6);
+    } catch (e) { /* no audio */ }
   }
 
   function renderChapters() {
