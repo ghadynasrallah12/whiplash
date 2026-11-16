@@ -49,15 +49,34 @@
 
   <!-- [02] About: a red page the logo floods open. Chapters come from the dashboard (About). -->
   <section class="about" id="about" aria-labelledby="nav-about" hidden>
-    <p class="about__sub"><span>[02] About — </span><span id="ch-count">5</span> chapters</p>
-    <div class="chapters" id="chapters" role="tablist" aria-label="Chapters"></div>
-    <figure class="plate">
-      <div class="plate__img"><img id="ch-img" src="" alt=""></div>
-      <div class="plate__cubes" id="cubes" aria-hidden="true"></div>   <!-- red cubes cover the photo, then blaze out -->
-      <figcaption id="ch-cap"></figcaption>
-    </figure>
-    <a class="about__back" href="#home" data-go="home">← [01] Home</a>
-    <span class="about__hint">Pick a chapter</span>
+    <div class="about__list">
+      <p class="about__sub"><span>[02] About — </span><span id="ch-count">5</span> chapters</p>
+      <div class="chapters" id="chapters" role="tablist" aria-label="Chapters"></div>
+      <figure class="plate">
+        <div class="plate__img"><img id="ch-img" src="" alt=""></div>
+        <div class="plate__cubes" id="cubes" aria-hidden="true"></div>   <!-- red cubes cover the photo, then blaze out -->
+        <figcaption id="ch-cap"></figcaption>
+      </figure>
+      <a class="about__back" href="#home" data-go="home">← [01] Home</a>
+      <span class="about__hint">Pick a chapter</span>
+    </div>
+
+    <!-- A chapter's own page. History = a timeline: the playhead runs along it and each date cuts in as it passes. -->
+    <div class="hist" id="hist" hidden>
+      <div class="hist__title"><div class="ch"><span class="ch__n" id="hist-n">[01]</span><span class="ch__t"><span id="hist-word">History</span></span></div></div>
+      <p class="hist__crumb"><span>[02] About / </span><span id="hist-crumb">[01] History</span></p>
+      <div class="tl" id="tl">
+        <i class="tl__rule"></i>
+        <i class="tl__head" id="tl-head"></i>
+        <ol class="tl__items" id="tl-items"></ol>
+      </div>
+      <div class="hist__foot">
+        <i class="tl__rule"></i>
+        <button class="hist__back" id="hist-back" type="button">← [02] About</button>
+        <div class="hist__chapters" id="hist-chapters"></div>
+        <button class="hist__next" id="hist-next" type="button"></button>
+      </div>
+    </div>
   </section>
 
   <!-- 3D logo (turns left/right only) -->

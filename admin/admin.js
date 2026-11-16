@@ -83,6 +83,7 @@
         categories: cats,
         projects: P.map((p, i) => ({ id: 'p-' + i, position: i + 1, name: p[0], type: p[1], category_id: cat(p[2]), description: 'Driven by sound design as much as image, we shape a complete sensory experience; where audio and visuals work seamlessly and land deeply, memorably and with impact.', thumb_url: '../assets/' + p[3] + '.jpg', video_url: i === 0 ? '../assets/hero.mp4' : '', film_link: 'https://vimeo.com/', logo_url: '', award_url: '', credits: cr, is_hero: i === 0, published: i !== 9 })),
         chapters: [['History', 'Since 20XX', 'work-7'], ['Countries', 'Beirut / Dubai / KSA', 'work-5'], ['Services', 'Edit to delivery', 'work-1']].map((c, i) => ({ id: 'ch-' + i, position: i + 1, title: c[0], caption: c[1], image_url: '../assets/' + c[2] + '.jpg' })),
+        milestones: [['Founded in Beirut', 'Two editors, one room, one deadline.'], ['First global brand', 'The cut that put us on the map.'], ['Colour & sound in-house', 'Every craft under one roof.'], ['Dubai', 'A second home for the studio.'], ['KSA', 'Cutting for the Kingdom.'], ['Now', 'Still obsessed with the frame.']].map((m, i) => ({ id: 'ms-' + i, position: i + 1, year: '20XX', title: m[0], line: m[1] })),
         clients: ['Sample Client', 'Another Brand', 'Agency Name'].map((name, i) => ({ id: 'c-' + i, position: i + 1, name, logo_url: '', website: '' })),
         texts: [
           { key: 'home.tagline', group_name: 'Home', label: 'Line under the film, left', kind: 'short', position: 1, value: 'Post-production · Beirut / Dubai / KSA' },
@@ -103,7 +104,8 @@
       };
     };
     try { db = JSON.parse(localStorage.getItem(KEY)) || seed(); } catch (e) { db = seed(); }
-    if (!db.chapters) db.chapters = seed().chapters;   // demo data saved before the About page existed
+    if (!db.chapters) db.chapters = seed().chapters;
+    if (!db.milestones) db.milestones = seed().milestones;   // demo data saved before the About page existed
     const persist = () => { try { localStorage.setItem(KEY, JSON.stringify(db)); } catch (e) { toast('This browser is out of demo storage. Use smaller images.', true); } };
     const wait = (v) => new Promise((r) => setTimeout(() => r(v), 120));
     const shrink = (file) => new Promise((res, rej) => {   // keep demo images small enough for localStorage
@@ -116,7 +118,7 @@
       async signIn(email) { db.session = { id: 'me', email: email || 'you@whiplash.demo', name: 'You', role: 'owner' }; db.editors[0].email = db.session.email; persist(); return wait(db.session); },
       async signOut() { db.session = null; persist(); },
       async setPassword() { return wait(); },
-      async loadAll() { return wait(JSON.parse(JSON.stringify({ projects: db.projects, categories: db.categories, clients: db.clients, chapters: db.chapters, texts: db.texts, editors: db.editors }))); },
+      async loadAll() { return wait(JSON.parse(JSON.stringify({ projects: db.projects, categories: db.categories, clients: db.clients, chapters: db.chapters, milestones: db.milestones, texts: db.texts, editors: db.editors }))); },
       async save(table, row) { const r = { ...row }; if (!r.id) { r.id = uid(); db[table].push(r); } else db[table] = db[table].map((x) => (x.id === r.id ? r : x)); persist(); return wait(r); },
       async patch(table, id, fields) { db[table] = db[table].map((x) => (x.id === id ? { ...x, ...fields } : x)); persist(); },
       async remove(table, id) { db[table] = db[table].filter((x) => x.id !== id); if (table === 'categories') db.projects.forEach((p) => { if (p.category_id === id) p.category_id = null; }); persist(); return wait(); },
@@ -160,10 +162,11 @@
       async setPassword(password) { const { error } = await sb.auth.updateUser({ password }); if (error) throw new Error(error.message); },
       async loadAll() {
         const chapters = await sb.from('chapters').select('*').order('position');
+        const milestones = await sb.from('milestones').select('*').order('position');
         const [projects, categories, clients, texts, editors] = await Promise.all([
           sb.from('projects').select('*').order('position'), sb.from('categories').select('*').order('position'),
           sb.from('clients').select('*').order('position'), sb.from('texts').select('*').order('position'), sb.from('editors').select('*').order('created_at')]);
-        return { projects: ok(projects), categories: ok(categories), clients: ok(clients), chapters: chapters.error ? null : chapters.data, texts: ok(texts), editors: ok(editors) };
+        return { projects: ok(projects), categories: ok(categories), clients: ok(clients), chapters: chapters.error ? null : chapters.data, milestones: milestones.error ? null : milestones.data, texts: ok(texts), editors: ok(editors) };
       },
       async save(table, row) {
         const { id, created_at, updated_at, ...fields } = row;
@@ -199,7 +202,7 @@
   }
 
   const api = LIVE ? liveApi() : demoApi();
-  const S = { user: null, view: 'projects', q: '', cat: '', projects: [], categories: [], clients: [], chapters: [], texts: [], editors: [] };
+  const S = { user: null, view: 'projects', q: '', cat: '', projects: [], categories: [], clients: [], chapters: [], milestones: [], texts: [], editors: [] };
 
   // =========================================================
   // UI PIECES
@@ -484,7 +487,49 @@
     return [
       h('div', { class: 'head' }, h('div', null, h('h1', null, 'About'), h('p', null, 'The chapters on the About page, in this order. Visitors pick one to see its picture.')),
         h('div', { class: 'head__actions' }, h('button', { class: 'btn btn--red', onclick: () => editChapter() }, 'New chapter'))),
-      list];
+      list,
+      timelineBlock()];
+  }
+  // the dates on the History page
+  function timelineBlock() {
+    const head = (extra) => h('div', { class: 'head', style: 'margin-top:56px' }, h('div', null, h('h2', { style: 'font:700 30px/1 var(--display);letter-spacing:-.025em' }, 'History timeline'), h('p', null, 'The dates shown when a visitor opens History. They appear one after the other, left to right. The last one is drawn as "still running".')), extra);
+    if (S.milestones === null) return h('div', null, head(), h('div', { class: 'list' }, h('div', { class: 'empty' }, h('h3', null, 'One setup step is missing'), 'Run supabase/schema.sql again in the Supabase SQL Editor, then reload this page.')));
+    const all = S.milestones.slice().sort(byPos);
+    const list = h('div', { class: 'list' });
+    all.forEach((m, i) => list.append(h('div', { class: 'item item--plain', 'data-id': m.id, draggable: true },
+      h('span', { class: 'grip', html: ICON.grip, title: 'Drag to reorder' }),
+      h('span', { class: 'item__n' }, pad2(i + 1)),
+      h('button', { class: 'item__main', onclick: () => editMilestone(m) }, h('span', { class: 'item__name' }, (m.year ? m.year + '  ' : '') + m.title), h('div', { class: 'item__meta' }, m.line)),
+      h('div', { class: 'item__acts' },
+        h('button', { class: 'icon-btn move', 'aria-label': 'Move up', html: ICON.up, disabled: i === 0, onclick: () => nudge('milestones', m.id, -1) }),
+        h('button', { class: 'icon-btn move', 'aria-label': 'Move down', html: ICON.down, disabled: i === all.length - 1, onclick: () => nudge('milestones', m.id, 1) }),
+        h('button', { class: 'icon-btn', 'aria-label': 'Edit ' + m.title, html: ICON.edit, onclick: () => editMilestone(m) })))));
+    if (!all.length) list.append(h('div', { class: 'empty' }, h('h3', null, 'No dates yet'), 'Add the first moment in the studio\'s story.'));
+    sortable(list, 'milestones', '.item');
+    return h('div', null, head(h('div', { class: 'head__actions' }, h('button', { class: 'btn', onclick: () => editMilestone() }, 'New date'))), list);
+  }
+  function editMilestone(m) {
+    const isNew = !m; m = m || { year: '', title: '', line: '' };
+    const year = h('input', { type: 'text', value: m.year, placeholder: '2014' });
+    const title = h('input', { type: 'text', value: m.title, placeholder: 'Founded in Beirut' });
+    const line = h('input', { type: 'text', value: m.line, placeholder: 'Two editors, one room, one deadline.' });
+    openSheet({
+      title: isNew ? 'New date' : 'Edit date',
+      build(body) { body.append(field('Year', year, 'Shown very large. Four characters fit best.'), field('What happened', title), field('One short line about it', line)); },
+      footer(foot, ctl) {
+        const save = h('button', { class: 'btn btn--red', onclick: async () => {
+          if (!title.value.trim()) { title.focus(); return toast('Say what happened.', true); }
+          save.disabled = true;
+          try { const row = { ...m, year: year.value.trim(), title: title.value.trim(), line: line.value.trim() }; if (isNew) row.position = S.milestones.length + 1;
+            const saved = await api.save('milestones', row); if (isNew) S.milestones.push(saved); else S.milestones = S.milestones.map((x) => (x.id === saved.id ? saved : x));
+            ctl.clean(); ctl.close(); render(); toast(isNew ? 'Date added' : 'Date saved'); } catch (e) { fail(e); save.disabled = false; }
+        } }, 'Save date');
+        foot.append(isNew ? h('span') : h('button', { class: 'btn btn--danger', onclick: async () => {
+          if (!await confirmBox({ title: 'Delete "' + m.title + '"?', body: 'It disappears from the History timeline.', yes: 'Delete date', danger: true })) return;
+          try { await api.remove('milestones', m.id); S.milestones = S.milestones.filter((x) => x.id !== m.id); ctl.clean(); ctl.close(); render(); toast('Date deleted'); } catch (e) { fail(e); }
+        } }, 'Delete'), h('div', null, h('button', { class: 'btn', onclick: ctl.tryClose }, 'Cancel'), save));
+      },
+    });
   }
   function editChapter(c) {
     const isNew = !c; c = c || { title: '', caption: '', image_url: '' };

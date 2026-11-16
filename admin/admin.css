@@ -104,6 +104,7 @@ a { color: inherit; }
 .list { border-top: 1.5px solid var(--line); }
 .item { display: grid; grid-template-columns: 26px 44px 128px minmax(0, 1fr) auto auto; align-items: center; gap: 16px; padding: 12px 6px; border-bottom: 1.5px solid var(--line); position: relative; }
 .item:hover { background: var(--surface); }
+.item--plain { grid-template-columns: 26px 44px minmax(0, 1fr) auto; }
 .item.is-draft .item__name, .item.is-draft .item__thumb { opacity: .45; }
 .item.is-dragging { opacity: .35; }
 .item.drop-before::before, .item.drop-after::after { content: ""; position: absolute; left: 0; right: 0; height: 3px; background: var(--red); }
@@ -201,6 +202,7 @@ dialog p { color: var(--mute); } dialog .btns { display: flex; justify-content: 
   .main { padding-top: 22px; padding-bottom: 130px; }
   .item { grid-template-columns: 68px minmax(0, 1fr) auto auto; gap: 10px; padding: 12px 0; }
   .item__n, .item .grip, .item__acts .icon-btn:not(.move) { display: none; }
+  .item--plain { grid-template-columns: minmax(0, 1fr) auto; }
   .item__acts .icon-btn { width: 30px; }
   .item__thumb { width: 68px; }
   .item__name { font-size: 18px; }

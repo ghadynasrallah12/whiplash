@@ -74,7 +74,18 @@ create table if not exists public.chapters (
   position  int  not null default 0,
   title     text not null,                       -- the big word in the list
   caption   text not null default '',            -- small line under the picture ("Since 20XX")
-  image_url text not null default ''
+  image_url text not null default '',
+  page      text not null default ''             -- 'timeline' = clicking it opens the History timeline
+);
+alter table public.chapters add column if not exists page text not null default '';
+
+-- History timeline: the dates the playhead runs through
+create table if not exists public.milestones (
+  id       uuid primary key default gen_random_uuid(),
+  position int  not null default 0,
+  year     text not null default '',             -- "2014" (text, so "Now" or "20XX" work too)
+  title    text not null,
+  line     text not null default ''
 );
 
 create table if not exists public.texts (
@@ -99,6 +110,7 @@ alter table public.projects   enable row level security;
 alter table public.clients    enable row level security;
 alter table public.texts      enable row level security;
 alter table public.chapters   enable row level security;
+alter table public.milestones enable row level security;
 
 drop policy if exists "editors read"     on public.editors;
 create policy "editors read" on public.editors for select using (public.is_editor());
@@ -129,6 +141,11 @@ drop policy if exists "editor write" on public.chapters;
 create policy "public read"  on public.chapters for select using (true);
 create policy "editor write" on public.chapters for all using (public.is_editor()) with check (public.is_editor());
 
+drop policy if exists "public read"  on public.milestones;
+drop policy if exists "editor write" on public.milestones;
+create policy "public read"  on public.milestones for select using (true);
+create policy "editor write" on public.milestones for all using (public.is_editor()) with check (public.is_editor());
+
 -- ---------- Uploaded images and clips ----------
 -- One public bucket: anyone can view a file by its link, only editors can add / replace / delete.
 insert into storage.buckets (id, name, public, file_size_limit)
@@ -149,13 +166,24 @@ select v.name, v.position from (values
 ) as v(name, position)
 where not exists (select 1 from public.categories);
 
-insert into public.chapters (title, caption, position)
-select v.title, v.caption, v.position from (values
-  ('History',   'Since 20XX',           1),
-  ('Countries', 'Beirut / Dubai / KSA', 2),
-  ('Services',  'Edit to delivery',     3)
-) as v(title, caption, position)
+insert into public.chapters (title, caption, position, page)
+select v.title, v.caption, v.position, v.page from (values
+  ('History',   'Since 20XX',           1, 'timeline'),
+  ('Countries', 'Beirut / Dubai / KSA', 2, ''),
+  ('Services',  'Edit to delivery',     3, '')
+) as v(title, caption, position, page)
 where not exists (select 1 from public.chapters);
+
+insert into public.milestones (year, title, line, position)
+select v.year, v.title, v.line, v.position from (values
+  ('20XX', 'Founded in Beirut',       'Two editors, one room, one deadline.', 1),
+  ('20XX', 'First global brand',      'The cut that put us on the map.',      2),
+  ('20XX', 'Colour & sound in-house', 'Every craft under one roof.',          3),
+  ('20XX', 'Dubai',                   'A second home for the studio.',        4),
+  ('20XX', 'KSA',                     'Cutting for the Kingdom.',             5),
+  ('20XX', 'Now',                     'Still obsessed with the frame.',       6)
+) as v(year, title, line, position)
+where not exists (select 1 from public.milestones);
 
 insert into public.texts (key, group_name, label, kind, value, position) values
   ('home.tagline',    'Home', 'Line under the film, left',  'short', 'Post-production · Beirut / Dubai / KSA', 1),

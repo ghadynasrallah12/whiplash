@@ -38,6 +38,7 @@
     about.classList.toggle('is-in', name === 'about');
     about.classList.toggle('is-settled', name === 'about');
     void about.offsetWidth; about.classList.remove('no-anim');
+    resetDetail();
     if (name === 'about') { coverPlate(); revealPlate(350); }
     drawLogo(name === 'home');
   }
@@ -62,7 +63,7 @@
     about.classList.remove('is-in', 'is-open', 'is-settled');
     setState(0);
     LOGO().setMode('home');
-    setTimeout(function () { about.hidden = true; locked = false; }, 900);
+    setTimeout(function () { about.hidden = true; resetDetail(); locked = false; }, 900);
   }
 
   function cutTo(i) {
@@ -99,7 +100,8 @@
   // scramble(el, text): each letter runs through random capitals, left to right, flipping
   // italic / light while it runs, with a small wave through the word.
   var scTimers = new WeakMap(), ABC = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
-  function scramble(el, text) {
+  function scramble(el, text, chars) {
+    chars = chars || ABC;
     if (!el) return;
     if (reduce) { el.textContent = text; return; }
     clearInterval(scTimers.get(el));
@@ -116,7 +118,7 @@
       cells.forEach(function (c, i) {
         var start = i * LAG, end = start + PER;
         if (t < start) { done = false; }
-        else if (t < end) { c.s.textContent = ABC[(Math.random() * 26) | 0]; c.s.className = 'sc sc--wave' + c.style; done = false; }
+        else if (t < end) { c.s.textContent = chars[(Math.random() * chars.length) | 0]; c.s.className = 'sc sc--wave' + c.style; done = false; }
         else if (t < end + 4) { c.s.textContent = c.ch; done = false; }                 // right letter, still in its odd style for a beat
         else { c.s.textContent = c.ch; c.s.className = 'sc sc--wave'; }
       });
@@ -191,8 +193,11 @@
       b.appendChild(n); b.appendChild(t);
       b.addEventListener('pointerenter', function (e) { if (e.pointerType !== 'mouse') return; b.classList.add('is-hover'); setChapter(i); chapterFx(i); });
       b.addEventListener('pointerleave', function () { b.classList.remove('is-hover'); });
-      b.addEventListener('click', function (e) { setChapter(i); if (e.detail && !b.classList.contains('is-hover')) chapterFx(i); });
-      b.addEventListener('focus', function () { setChapter(i); });
+      b.addEventListener('click', function (e) {
+        if (i === timelineChapter()) return openDetail(i);
+        setChapter(i); if (e.detail && !b.classList.contains('is-hover')) chapterFx(i);
+      });
+      b.addEventListener('focus', function () { if (!detailOpen) setChapter(i); });
       chTrack.appendChild(b);
     });
     chapter = Math.min(chapter, CHAPTERS.length - 1);
@@ -200,7 +205,7 @@
   }
   var swapT;
   function setChapter(i, instant) {
-    if (!CHAPTERS.length) return;
+    if (!CHAPTERS.length || (detailOpen && !instant)) return;
     var same = i === chapter && !instant; chapter = i;
     var c = CHAPTERS[i], rows = chTrack.children;
     for (var k = 0; k < rows.length; k++) rows[k].setAttribute('aria-selected', String(k === i));
@@ -218,6 +223,113 @@
     swapT = setTimeout(function () { fill(); revealPlate(60); }, 260);   // …and blaze off the new one
   }
   renderChapters();
+
+  // ---------- chapter page: History timeline ----------
+  // Fallback dates; the dashboard (About → History timeline) replaces them.
+  var MILESTONES = [
+    { year: '20XX', title: 'Founded in Beirut',       line: 'Two editors, one room, one deadline.' },
+    { year: '20XX', title: 'First global brand',      line: 'The cut that put us on the map.' },
+    { year: '20XX', title: 'Colour & sound in-house', line: 'Every craft under one roof.' },
+    { year: '20XX', title: 'Dubai',                   line: 'A second home for the studio.' },
+    { year: '20XX', title: 'KSA',                     line: 'Cutting for the Kingdom.' },
+    { year: '20XX', title: 'Now',                     line: 'Still obsessed with the frame.' },
+  ];
+  var hist = document.getElementById('hist'), tlItems = document.getElementById('tl-items'), tlHead = document.getElementById('tl-head');
+  var detailOpen = false, histTimers = [];
+  function later(fn, ms) { histTimers.push(setTimeout(fn, ms)); }
+  function timelineChapter() { for (var k = 0; k < CHAPTERS.length; k++) if (CHAPTERS[k].page === 'timeline') return k; return 0; }
+  function el(tag, cls, text) { var e = document.createElement(tag); if (cls) e.className = cls; if (text != null) e.textContent = text; return e; }
+
+  function renderTimeline() {
+    tlItems.textContent = '';
+    tlItems.style.setProperty('--n', MILESTONES.length);
+    MILESTONES.forEach(function (m, i) {
+      var li = el('li'), n = MILESTONES.length, last = i === n - 1;
+      var year = el('div', 'tl__year'); year.appendChild(el('span', '', m.year));
+      var bar = el('div', 'tl__bar');
+      // clips run from light to dark; the last one is still "open" (outline only)
+      if (!last) bar.style.setProperty('--c', 'hsl(240 2% ' + Math.round(73 - (n > 2 ? i / (n - 2) : 0) * 43) + '%)');
+      li.appendChild(year); li.appendChild(bar); li.appendChild(el('h3', 'tl__name', m.title)); li.appendChild(el('p', 'tl__line', m.line));
+      tlItems.appendChild(li);
+    });
+  }
+  renderTimeline();
+
+  function fillDetail(i) {
+    document.getElementById('hist-n').textContent = '[' + two(i + 1) + ']';
+    document.getElementById('hist-word').textContent = CHAPTERS[i].title;
+    document.getElementById('hist-crumb').textContent = '[' + two(i + 1) + '] ' + CHAPTERS[i].title;
+    var box = document.getElementById('hist-chapters'); box.textContent = '';
+    CHAPTERS.forEach(function (c, k) {
+      if (k === i) return;
+      var b = el('button', '', '[' + two(k + 1) + '] ' + c.title); b.type = 'button';
+      b.addEventListener('click', function () { closeDetail(k); });
+      box.appendChild(b);
+    });
+    var nx = (i + 1) % CHAPTERS.length, next = document.getElementById('hist-next');
+    next.hidden = CHAPTERS.length < 2; next.textContent = CHAPTERS[nx].title + ' →';
+    next.onclick = function () { closeDetail(nx); };
+  }
+  document.getElementById('hist-back').addEventListener('click', function () { closeDetail(); });
+
+  function openDetail(i) {
+    if (detailOpen || locked) return;
+    detailOpen = true; histTimers.forEach(clearTimeout); histTimers = [];
+    setChapter(i, true); fillDetail(i);
+    for (var k = 0; k < chTrack.children.length; k++) chTrack.children[k].classList.toggle('is-picked', k === i);
+    chTrack.children[i].classList.remove('is-hover');
+    var word = chTrack.children[i].querySelector('.ch__t > span'); clearInterval(scTimers.get(word)); word.textContent = CHAPTERS[i].title;   // stop any letter shuffle mid-way
+    chTrack.style.transform = 'translateY(calc(var(--row) * ' + -i + '))';     // the picked word rides up to the first row
+    about.classList.add('is-detail');
+    tick(1, .6);
+    later(function () {
+      hist.hidden = false; hist.classList.remove('is-in', 'is-out'); void hist.offsetWidth;
+      about.classList.add('is-detail-on'); hist.classList.add('is-in');
+      playTimeline();
+    }, reduce ? 0 : 620);
+  }
+
+  // the playhead visits each date in turn; a date only cuts in once the playhead is on it
+  function playTimeline() {
+    var items = [].slice.call(tlItems.children);
+    if (reduce) { items.forEach(function (li) { li.classList.add('is-on'); }); return; }
+    var mobile = innerWidth <= 760, t = 750;
+    later(function () {
+      var bar = items[0] && items[0].querySelector('.tl__bar'); if (!bar) return;
+      tlHead.style.height = (bar.offsetTop + bar.offsetHeight + tlHead.offsetTop * -1 + 2) + 'px';
+      tlHead.style.left = items[0].offsetLeft + 'px'; tlHead.classList.add('is-on');
+    }, 400);
+    items.forEach(function (li, i) {
+      later(function () { tlHead.style.left = li.offsetLeft + 'px'; }, t);
+      later(function () {
+        li.classList.add('is-on');
+        scramble(li.querySelector('.tl__year > span'), MILESTONES[i].year, '0123456789');
+        tick(1, .4);
+        if (mobile) li.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+      }, t + (mobile ? 0 : 300));
+      t += 620;
+    });
+  }
+
+  function resetDetail() {
+    histTimers.forEach(clearTimeout); histTimers = []; detailOpen = false;
+    hist.hidden = true; hist.classList.remove('is-in', 'is-out');
+    about.classList.remove('is-detail', 'is-detail-on');
+    tlHead.classList.remove('is-on');
+    [].forEach.call(tlItems.children, function (li) { li.classList.remove('is-on'); });
+    if (chTrack) { [].forEach.call(chTrack.children, function (r) { r.classList.remove('is-picked'); }); setChapter(chapter, true); }
+  }
+  // back to the chapter list (optionally landing on another chapter)
+  function closeDetail(to) {
+    if (!detailOpen) return;
+    histTimers.forEach(clearTimeout); histTimers = [];
+    hist.classList.add('is-out'); tick(-1, .5);
+    setTimeout(function () {
+      if (to != null) chapter = to;
+      resetDetail();
+      coverPlate(); revealPlate(200);
+    }, reduce ? 0 : 360);
+  }
 
   // ---------- sound: ONE switch for everything ----------
   // "Sound — On / Off" on the homepage rules the reel's audio AND the hover sounds.
@@ -269,9 +381,12 @@
       if (map['seo.title']) document.title = map['seo.title'];
       var d = document.querySelector('meta[name=description]'); if (d && map['seo.description']) d.content = map['seo.description'];
     }).catch(function () { /* keep the words already in the page */ });
-    rest('chapters?select=title,caption,image_url&order=position').then(function (rows) {
+    rest('chapters?select=*&order=position').then(function (rows) {
       if (rows.length) { CHAPTERS = rows; renderChapters(); }
     }).catch(function () { /* table not there yet: keep the built-in chapters */ });
+    rest('milestones?select=year,title,line&order=position').then(function (rows) {
+      if (rows.length) { MILESTONES = rows; renderTimeline(); }
+    }).catch(function () { /* keep the built-in dates */ });
     // the project marked "Homepage film" supplies the reel
     rest('projects?select=video_url,thumb_url&is_hero=eq.true&published=eq.true&limit=1').then(function (rows) {
       var p = rows[0]; if (!p || !p.video_url) return;

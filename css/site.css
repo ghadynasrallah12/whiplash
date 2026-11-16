@@ -27,7 +27,7 @@
 *, *::before, *::after { box-sizing: border-box; }
 html, body { margin: 0; height: 100%; background: var(--bg); color: var(--ink); font-family: var(--font); overflow: hidden; -webkit-font-smoothing: antialiased; }
 a { color: inherit; text-decoration: none; }
-button { font: inherit; color: inherit; background: none; border: 0; padding: 0; cursor: pointer; }
+button { font: inherit; color: inherit; background: none; border: 0; padding: 0; cursor: pointer; text-transform: inherit; letter-spacing: inherit; }
 :focus-visible { outline: 1.5px solid var(--ink); outline-offset: 4px; }
 [hidden] { display: none !important; }
 
@@ -81,7 +81,7 @@ button { font: inherit; color: inherit; background: none; border: 0; padding: 0;
 /* ---------- [02] About ----------
    Opens from the logo: the logo grows until its red fills the screen, and this red page
    spreads out of it (a circle from the centre). Closing runs the same thing backwards. */
-:root { --page-red: #d63831; --ax: 5.7vw; }
+:root { --page-red: #d63831; --ax: 5.7vw; --row: min(6.75vw, 12.2vh); }
 .nav { z-index: 6; transition: left .7s cubic-bezier(.6, 0, .2, 1), right .7s cubic-bezier(.6, 0, .2, 1), color .3s; }
 body[data-scene=about] .nav { left: var(--ax); right: 6vw; color: #0a0a0c; }
 body[data-scene=about] .nav a:hover, body[data-scene=about] .nav a[aria-current=page] { color: #fff; }
@@ -99,7 +99,8 @@ body:not([data-scene=home]):not(.is-opening) .logo { opacity: 0; }
 .about__hint { position: absolute; right: 6vw; bottom: 4vh; padding: 6px 0; }
 
 /* chapters: three rows show; the list slides when you go past them */
-.chapters { --row: min(6.75vw, 12.2vh); position: absolute; left: var(--ax); top: 15.6vh; height: calc(var(--row) * 3); width: 62vw; overflow: hidden; }
+.about__list { position: absolute; inset: 0; }
+.chapters { position: absolute; left: var(--ax); top: 15.6vh; height: calc(var(--row) * 3); width: 62vw; overflow: hidden; }
 .chapters__track { transition: transform .6s cubic-bezier(.6, 0, .2, 1); }
 .ch { display: flex; align-items: center; height: var(--row); width: 100%; text-align: left; color: #0a0a0c; transition: color .2s; }
 .ch__n { width: 5vw; flex: none; font-size: clamp(11px, 1vw, 24px); letter-spacing: .02em; }
@@ -133,6 +134,56 @@ body:not([data-scene=home]):not(.is-opening) .logo { opacity: 0; }
 .sc--wave { animation: letterWave .9s ease-in-out both; animation-delay: calc(var(--i, 0) * 40ms); }
 @keyframes letterWave { 0% { transform: translateY(0); } 30% { transform: translateY(-.07em) scale(1.06); } 60% { transform: translateY(.03em); } 100% { transform: translateY(0); } }
 
+/* ---------- A chapter's page (History = the timeline) ----------
+   Opening: the other words leave, the picked word slides up to the first row and stays put while
+   the page changes under it. Then the rule draws, and the playhead runs along it: each date cuts
+   in as the playhead reaches it, one at a time. */
+.about.is-detail .about__list .ch { pointer-events: none; }
+.about.is-detail .about__list .ch__t { overflow: hidden; }
+.about.is-detail .about__list .ch .ch__t > span { transition: transform .5s cubic-bezier(.7, 0, .3, 1), color .3s; transition-delay: 0s; }
+.about.is-detail .about__list .ch:not(.is-picked) .ch__t > span { transform: translateY(-105%); }
+.about.is-detail .about__list .ch.is-picked .ch__t > span { transform: none; }
+.about.is-detail .about__list .ch:not(.is-picked) .ch__n, .about.is-detail .plate, .about.is-detail .about__sub, .about.is-detail .about__hint, .about.is-detail .about__back { opacity: 0; transition: opacity .35s; }
+.about.is-detail-on .about__list { visibility: hidden; }
+
+.hist { position: absolute; inset: 0; color: #0a0a0c; }
+.hist__title { position: absolute; left: var(--ax); top: 15.6vh; width: 62vw; }
+.hist__title .ch { color: #fff; transition: color .6s .1s; }
+.hist__title .ch__t > span { transform: none; transition: none; }
+.hist.is-in .hist__title .ch { color: #0a0a0c; }
+.hist__crumb, .hist__back, .hist__next, .hist__chapters { font-size: var(--ui); font-weight: 500; letter-spacing: .05em; text-transform: uppercase; line-height: 1; }
+.hist__crumb { position: absolute; right: var(--ax); top: 44vh; margin: 0; text-align: right; opacity: 0; transition: opacity .5s .3s; }
+.hist.is-in .hist__crumb { opacity: 1; }
+
+.tl { position: absolute; left: var(--ax); right: var(--ax); top: 51.9vh; }
+.tl__rule { position: absolute; left: 0; right: 0; top: 0; height: 2px; background: #fff; box-shadow: 0 1px 0 #0a0a0c; transform: scaleX(0); transform-origin: left; transition: transform .9s cubic-bezier(.7, 0, .2, 1); }
+.hist.is-in .tl__rule { transform: none; }
+.tl__items { list-style: none; margin: 0; padding: 4.7vh 0 0; display: grid; grid-template-columns: repeat(var(--n, 6), minmax(0, 1fr)); column-gap: .97vw; }
+.tl__year { font-size: calc(26.2vw / max(var(--n, 6), 5)); line-height: 1; font-weight: 500; letter-spacing: -.02em; overflow: hidden; white-space: nowrap; }
+.tl__year > span { display: block; transform: translateY(105%); transition: transform .5s cubic-bezier(.2, .9, .2, 1); }
+.tl__bar { height: 4.33vh; margin-top: .35vh; border: 1.5px solid #fff; background: var(--c, transparent); transform: scaleX(0); transform-origin: left; transition: transform .45s cubic-bezier(.7, 0, .2, 1); }
+.tl__name { margin: 2.6vh 0 0; font-size: calc(7.6vw / max(var(--n, 6), 5)); font-weight: 500; line-height: 1.15; text-transform: uppercase; }
+.tl__line { margin: .9vh 0 0; font-size: clamp(11px, calc(4.3vw / max(var(--n, 6), 5)), 19px); line-height: 1.3; }
+.tl__name, .tl__line { opacity: 0; transform: translateY(12px); transition: opacity .45s, transform .5s cubic-bezier(.2, .9, .2, 1); }
+.tl li.is-on .tl__year > span { transform: none; }
+.tl li.is-on .tl__bar { transform: none; }
+.tl li.is-on .tl__name { opacity: 1; transform: none; transition-delay: .12s; }
+.tl li.is-on .tl__line { opacity: .62; transform: none; transition-delay: .22s; }
+/* the playhead */
+.tl__head { position: absolute; top: -2.3vh; left: 0; width: 2px; margin-left: -.5vw; background: #fff; box-shadow: 1px 0 0 #0a0a0c; opacity: 0; transition: left .34s cubic-bezier(.6, 0, .2, 1), opacity .3s; }
+.tl__head::before { content: ""; position: absolute; left: -7px; top: -2px; width: 16px; height: 12px; background: #fff; clip-path: polygon(0 0, 100% 0, 100% 45%, 50% 100%, 0 45%); }
+.tl__head.is-on { opacity: 1; }
+
+.hist__foot { position: absolute; left: var(--ax); right: var(--ax); top: 94.25vh; bottom: 0; display: flex; align-items: center; justify-content: space-between; opacity: 0; transition: opacity .5s .5s; }
+.hist.is-in .hist__foot { opacity: 1; }
+.hist__foot button { padding: 6px 0; }
+.hist__foot button:hover { color: #fff; }
+.hist__chapters { display: flex; gap: 2.2vw; }
+.hist__chapters button { opacity: .38; transition: opacity .2s; }
+.hist__chapters button:hover { opacity: 1; }
+.hist { transition: opacity .35s; }
+.hist.is-out { opacity: 0; }
+
 /* ---------- Cursor ring (trails the pointer; real cursor stays) ---------- */
 .ring { position: fixed; left: 0; top: 0; width: 30px; height: 30px; margin: -15px 0 0 -15px; border: 1.5px solid var(--ink); border-radius: 50%; pointer-events: none; z-index: 9; opacity: 0; transition: opacity .2s, width .2s, height .2s, margin .2s; }
 .ring.is-on { opacity: 1; }
@@ -154,14 +205,29 @@ body:not([data-scene=home]):not(.is-opening) .logo { opacity: 0; }
   .ring { display: none; }
 }
 @media (max-width: 760px) {
-  :root { --ax: 18px; }
+  :root { --ax: 18px; --row: 11.4vw; }
   body[data-scene=about] .nav { right: 18px; }
   .about__sub { top: 104px; }
-  .chapters { --row: 11.4vw; top: 128px; width: calc(100vw - 36px); }
+  .chapters { top: 128px; width: calc(100vw - 36px); }
   .ch__n { width: 44px; }
   .plate { left: auto; right: 18px; top: calc(128px + 11.4vw * 3 + 22px); width: 46vw; height: 58vw; }
   .plate figcaption { top: calc(100% + 10px); left: auto; right: 0; }
   .about__back { bottom: 22px; } .about__hint { right: 18px; bottom: 22px; }
+}
+@media (max-width: 760px) {
+  .hist { overflow-y: auto; padding: calc(128px + var(--row) + 20px) 18px 0; }
+  .hist__title { top: 128px; width: calc(100vw - 36px); }
+  .hist__crumb { position: static; text-align: left; }
+  .tl { position: relative; left: 0; right: 0; top: 0; margin-top: 22px; }
+  .tl__items { display: block; padding-top: 18px; }
+  .tl li { display: grid; grid-template-columns: 31vw 1fr; column-gap: 14px; align-items: start; padding-bottom: 20px; }
+  .tl__year { font-size: 10.5vw; grid-row: span 3; }
+  .tl__bar { height: 12px; margin-top: 6px; }
+  .tl__name { margin-top: 10px; font-size: 15px; }
+  .tl__line { margin-top: 4px; font-size: 12.5px; }
+  .tl__head { display: none; }
+  .hist__foot { position: sticky; top: auto; left: 0; right: 0; bottom: 0; height: 58px; background: var(--page-red); }
+  .hist__chapters { display: none; }
 }
 @media (hover: none) { .ring { display: none; } }
 @media (prefers-reduced-motion: reduce) { .rec i { animation: none; } .about, .about *, .about *::after { transition-duration: .01ms !important; transition-delay: 0s !important; } }
