@@ -31,6 +31,9 @@
   function snap(i) {
     var name = SCENES[i];
     if (typeof closeTry === 'function') closeTry(true);
+    // [04] Projects is its own "desktop" (js/desk.js) laid over the site
+    var D = window.WL_DESK;
+    if (D) { if (name === 'projects') D.open(true); else if (!D.busy) D.close(true); }
     setState(i);
     LOGO().setMode(name === 'home' ? 'home' : name === 'about' ? 'flood' : 'hidden');
     about.classList.add('no-anim');
@@ -75,6 +78,13 @@
     if (reduce) { locked = true; snap(i); setTimeout(function () { locked = false; }, 300); return; }
     if (from === 'home' && to === 'about') return openAbout();
     if (from === 'about' && to === 'home') return closeAbout();
+    var D = window.WL_DESK;
+    if (D && to === 'projects') {                              // slide over to the Projects desktop, like switching spaces on a Mac
+      locked = true; D.open(false, function () { snap(i); locked = false; }); return;
+    }
+    if (D && from === 'projects') {                            // …and slide back
+      locked = true; D.close(false, function () { locked = false; }); snap(i); return;
+    }
     locked = true;
     body.classList.add('is-cutting');                         // a few black frames…
     setTimeout(function () {
@@ -93,6 +103,7 @@
   function step(dir) { if (!locked) cutTo(current + dir); }
   // Scrolling and swiping do NOT change pages (by request): pages change on click, or with the arrow keys.
   window.addEventListener('keydown', function (e) {
+    if (body.classList.contains('desk-on')) return;     // the Projects desktop has its own keys
     if (tryOpen) return;
     if (['ArrowRight', 'ArrowDown', 'PageDown'].indexOf(e.key) > -1) step(1);
     if (['ArrowLeft', 'ArrowUp', 'PageUp'].indexOf(e.key) > -1) step(-1);
@@ -806,6 +817,9 @@
       reel.src = p.video_url; reel.play().catch(function () {});
     }).catch(function () {});
   }
+
+  // shared with js/desk.js
+  window.WL = { cutTo: function (name) { cutTo(SCENES.indexOf(name)); }, tick: function (d, v) { tick(d, v); }, rest: rest, live: !!(CFG.supabaseUrl && CFG.supabaseAnonKey), reduce: reduce, unlock: function () { unlockSound(); } };
 
   // ---------- start ----------
   var first = SCENES.indexOf(location.hash.slice(1));

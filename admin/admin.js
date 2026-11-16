@@ -343,8 +343,8 @@
     const chip = (id, name) => h('button', { class: 'chip', 'aria-pressed': String(S.cat === id), onclick: () => { S.cat = id; render(); } }, name);
     return [
       h('div', { class: 'head' },
-        h('div', null, h('h1', null, 'Projects'), h('p', null, 'The order here is the order on the site. Drag a row, or use the arrows, to move it.')),
-        h('div', { class: 'head__actions' }, h('button', { class: 'btn', onclick: editCategories }, 'Categories'), h('button', { class: 'btn btn--red', onclick: () => editProject() }, 'New project'))),
+        h('div', null, h('h1', null, 'Projects'), h('p', null, 'The order here is the order inside each folder on the site. Drag a row, or use the arrows, to move it. Double-clicking a project on the site plays its preview clip.')),
+        h('div', { class: 'head__actions' }, h('button', { class: 'btn', onclick: editCategories }, 'Folders'), h('button', { class: 'btn btn--red', onclick: () => editProject() }, 'New project'))),
       h('div', { class: 'tools' }, search, chip('', 'All ' + all.length), S.categories.slice().sort(byPos).map((c) => chip(c.id, c.name))),
       list];
   }
@@ -375,7 +375,7 @@
       title: isNew ? 'New project' : 'Edit project',
       build(body) {
         body.append(
-          field('Project name', name), h('div', { class: 'row2' }, field('Type', type), field('Category', cat, 'Used by the filter menu on the site.')), types,
+          field('Project name', name), h('div', { class: 'row2' }, field('Type', type), field('Folder', cat, 'The folder it sits in on the Projects page.')), types,
           field('Description', desc),
           h('div', { class: 'group' }, h('h3', null, 'Film'), thumb, clip, h('div', { class: 'field' }, h('label', { for: 'film' }, 'Full film link'), Object.assign(film, { id: 'film' }), hostNote)),
           h('div', { class: 'group' }, h('h3', null, 'Credits'), credits, h('div', null, h('button', { class: 'btn btn--sm', type: 'button', onclick: () => addCredit().querySelector('input').focus() }, 'Add credit'))),
@@ -408,7 +408,7 @@
 
   function editCategories() {
     openSheet({
-      title: 'Categories',
+      title: 'Folders',
       build(body) {
         const wrap = h('div', { style: 'display:grid;gap:8px' });
         const paint = () => {
@@ -429,7 +429,7 @@
         paint();
         const add = h('input', { class: 'input', type: 'text', placeholder: 'New category name', 'aria-label': 'New category name', onkeydown: (e) => { if (e.key === 'Enter') go(); } });
         const go = async () => { const v = add.value.trim(); if (!v) return add.focus(); try { S.categories.push(await api.save('categories', { name: v, position: S.categories.length + 1 })); add.value = ''; paint(); render(); toast('Category added'); } catch (e) { fail(e); } };
-        body.append(h('p', { class: 'note' }, 'Categories are the filters visitors use on the Projects page. Changes save as you make them.'), wrap,
+        body.append(h('p', { class: 'note' }, 'Each category is a folder on the Projects page, in this order. Changes save as you make them.'), wrap,
           h('div', { style: 'display:flex;gap:8px' }, add, h('button', { class: 'btn', onclick: go }, 'Add')));
         body.addEventListener('input', (e) => e.stopPropagation());   // saves instantly, so never "unsaved"
       },
