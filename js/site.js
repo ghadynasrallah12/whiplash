@@ -824,36 +824,32 @@
 
   // ---------- [06] Contact ----------
   var contact = document.getElementById('contact'), contactBusy = false, contactT = [];
-  // the word is drawn once off-screen, then painted as 7 strips, each with its own sideways offset
-  var WM_REST = [-40, 70, 20, 96, -46, 52, 26];           // how far each strip sits off-register (2200 = the word's width)
-  var WM_PULL = [-60, 45, -35, 70, -50, 38, -42];         // how much each strip follows the cursor
-  var wmCanvas = document.getElementById('wm'), wmCtx = wmCanvas.getContext('2d'), wmOff = document.createElement('canvas');
-  var wmGeo = { W: 0, H: 0, x0: 0, ww: 0, dpr: 1 }, wm = [];
-  for (var wk = 0; wk < 7; wk++) wm.push({ x: (wk % 2 ? 1 : -1) * 3000, target: (wk % 2 ? 1 : -1) * 3000, settled: false });
+  // The word is the designed wordmark (assets/wordmark.png, already off-register as in the design).
+  // It is painted as 7 strips; each strip flies in from the side and comes to rest at 0, i.e. exactly
+  // the design. After that a strip only drifts a little with the cursor and glitches now and then.
+  var WM_PULL = [-26, 20, -16, 30, -22, 17, -19];         // how much each strip follows the cursor (2200 = the word's width)
+  var wmCanvas = document.getElementById('wm'), wmCtx = wmCanvas.getContext('2d'), wmImg = new Image();
+  var wmGeo = { W: 0 }, wm = [];
+  for (var wk = 0; wk < 7; wk++) wm.push({ x: (wk % 2 ? 1 : -1) * 3000, target: (wk % 2 ? 1 : -1) * 3000, rest: 0, pull: 0, settled: false });
+  wmImg.onload = function () { if (!contact.hidden && wmBuild()) wmPaint(); };
+  wmImg.src = 'assets/wordmark.png';
   function wmBuild() {
     var r = wmCanvas.getBoundingClientRect(); if (!r.width || !r.height) return false;
     var dpr = Math.min(window.devicePixelRatio || 1, 2), W = r.width, H = r.height, mobile = innerWidth <= 760;
-    var ww = mobile ? W - 24 : W * .93, x0 = mobile ? 12 : W * .034;
+    var ratio = wmImg.naturalWidth ? wmImg.naturalWidth / wmImg.naturalHeight : 7.07;
+    var ww = Math.min(mobile ? W - 24 : W * .93, H * ratio), x0 = mobile ? 12 : W * .0334;
     wmCanvas.width = Math.round(W * dpr); wmCanvas.height = Math.round(H * dpr);
-    // the word, stretched to exactly ww × H (cap height)
-    var F = 200, font = '700 ' + F + 'px ' + getComputedStyle(document.body).getPropertyValue('--font');
-    var c = wmOff.getContext('2d'); c.font = font;
-    var m = c.measureText('WHIPLASH'), asc = m.actualBoundingBoxAscent || F * .716, wid = m.width;
-    wmOff.width = Math.round(ww * dpr); wmOff.height = Math.round(H * dpr);
-    c = wmOff.getContext('2d'); c.setTransform(dpr * ww / wid, 0, 0, dpr * H / asc, 0, 0);
-    c.font = font; c.fillStyle = '#f0f0f5'; c.textBaseline = 'alphabetic'; c.fillText('WHIPLASH', 0, asc);
     var unit = ww / 2200;
-    wm.forEach(function (b, k) { b.rest = WM_REST[k] * unit; b.pull = WM_PULL[k] * unit; if (b.settled) { b.target = b.rest; } });
-    wmGeo = { W: W, H: H, x0: x0, ww: ww, dpr: dpr, unit: unit };
+    wm.forEach(function (b, k) { b.pull = WM_PULL[k] * unit; });
+    wmGeo = { W: W, H: H, x0: x0, ww: ww, wh: ww / ratio, dpr: dpr, unit: unit };
     return true;
   }
   function wmPaint() {
-    var g = wmGeo; if (!g.W) return;
+    var g = wmGeo; if (!g.W || !wmImg.naturalWidth) return;
     wmCtx.setTransform(1, 0, 0, 1, 0, 0); wmCtx.clearRect(0, 0, wmCanvas.width, wmCanvas.height);
-    var bh = g.H / 7;
+    var sh = wmImg.naturalHeight / 7, dh = g.wh / 7;
     wm.forEach(function (b, k) {
-      var sy = Math.round(k * bh * g.dpr), sh = Math.round(bh * g.dpr) - Math.max(1, Math.round(g.dpr * .8));   // a hairline between strips
-      wmCtx.drawImage(wmOff, 0, sy, wmOff.width, sh, Math.round((g.x0 + b.x) * g.dpr), sy, wmOff.width, sh);
+      wmCtx.drawImage(wmImg, 0, k * sh, wmImg.naturalWidth, sh, (g.x0 + b.x) * g.dpr, k * dh * g.dpr, g.ww * g.dpr, dh * g.dpr);
     });
   }
   window.addEventListener('resize', function () { if (!contact.hidden && wmBuild()) wmPaint(); });
