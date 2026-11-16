@@ -397,17 +397,16 @@
   function renderChips(active) {
     var box = document.getElementById('try-chips'); box.textContent = '';
     CRAFTS.forEach(function (c, i) {
-      var b = el('button', '', '[' + c.name + ']'); b.type = 'button'; b.setAttribute('role', 'tab'); b.setAttribute('aria-selected', String(i === active));
-      b.addEventListener('click', function () { setFx(i, true); });
+      // labels only: the page always shows Edit (Raw / Cut); the other crafts are listed, not clickable
+      var b = el('span', '', '[' + c.name + ']'); if (i === active) b.className = 'is-on';
       box.appendChild(b);
     });
   }
   var fxIndex = 0;
   function setFx(i, anim) {
     fxIndex = i;
-    var key = fxOf(i), words = FX[key];
+    var key = 'edit', words = FX[key];
     tryEl.dataset.fx = key;
-    [].forEach.call(document.getElementById('try-chips').children, function (b, k) { b.setAttribute('aria-selected', String(k === i)); });
     var a = document.querySelector('#try-wa > span'), b = document.querySelector('#try-wb > span');
     a.parentNode.style.setProperty('--len', Math.max(3, words[0].length)); b.parentNode.style.setProperty('--len', Math.max(3, words[1].length));   // longer words set smaller so they fit
     if (anim) { scramble(a, words[0].toUpperCase()); scramble(b, words[1].toUpperCase()); tick(1, .5); }
@@ -518,6 +517,7 @@
     tryOpen = true; unlockSound();
     var src = reelSrc();
     [vBefore, vAfter].forEach(function (v) { if (v.getAttribute('src') !== src) v.src = src; v.currentTime = 0; v.play().catch(function () {}); });
+    fxIndex = Math.max(0, CRAFTS.findIndex(function (c) { return String(c.name).toLowerCase() === 'edit'; }));
     renderChips(fxIndex); setFx(fxIndex, false); setX(50);
     tryEl.hidden = false; tryEl.classList.remove('is-in', 'is-out', 'is-open'); void tryEl.offsetWidth;
     tryEl.classList.add('is-open');                         // the red line drops

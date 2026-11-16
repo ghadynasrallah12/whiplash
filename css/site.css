@@ -330,10 +330,9 @@ body.is-dark[data-scene=about] .nav a:hover, body.is-dark[data-scene=about] .nav
 
 .try__copy { position: absolute; left: var(--ax); bottom: 9.3vh; z-index: 3; color: #0a0a0c; pointer-events: none; }
 .try__text { margin: 0 0 3.3vh; font-size: clamp(15px, 1.3vw, 30px); font-weight: 500; line-height: 1.2; }
-.try__chips { display: flex; flex-wrap: wrap; gap: .4vw 2.1vw; pointer-events: auto; }
-.try__chips button { font-size: var(--ui); font-weight: 500; letter-spacing: .05em; text-transform: uppercase; padding: 6px 0; line-height: 1; }
-.try__chips button[aria-selected=true] { color: var(--red); }
-@media (hover: hover) { .try__chips button:hover { color: var(--red); } }
+.try__chips { display: flex; flex-wrap: wrap; gap: .4vw 2.1vw; }
+.try__chips span { font-size: var(--ui); font-weight: 500; letter-spacing: .05em; text-transform: uppercase; padding: 6px 0; line-height: 1; }
+.try__chips span.is-on { color: var(--red); }
 .try__text, .try__chips { opacity: 0; transform: translateY(10px); transition: opacity .5s 1.3s, transform .6s cubic-bezier(.2, .9, .2, 1) 1.3s; }
 .try__chips { transition-delay: 1.4s; }
 .try.is-in .try__text, .try.is-in .try__chips { opacity: 1; transform: none; }
