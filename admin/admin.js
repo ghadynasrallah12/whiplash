@@ -84,6 +84,8 @@
         projects: P.map((p, i) => ({ id: 'p-' + i, position: i + 1, name: p[0], type: p[1], category_id: cat(p[2]), description: 'Driven by sound design as much as image, we shape a complete sensory experience; where audio and visuals work seamlessly and land deeply, memorably and with impact.', thumb_url: '../assets/' + p[3] + '.jpg', video_url: i === 0 ? '../assets/hero.mp4' : '', film_link: 'https://vimeo.com/', logo_url: '', award_url: '', credits: cr, is_hero: i === 0, published: i !== 9 })),
         clients: ['Sample Client', 'Another Brand', 'Agency Name'].map((name, i) => ({ id: 'c-' + i, position: i + 1, name, logo_url: '', website: '' })),
         texts: [
+          { key: 'home.tagline', group_name: 'Home', label: 'Line under the film, left', kind: 'short', position: 1, value: 'Post-production · Beirut / Dubai / KSA' },
+          { key: 'home.reel_label', group_name: 'Home', label: 'Label next to the timecode', kind: 'short', position: 2, value: 'Showreel 26' },
           { key: 'about.lead1', group_name: 'About', label: 'Opening line', kind: 'long', position: 1, value: "We come from music, not film. That's why we care so much about timing. If it doesn't feel right, we don't move on." },
           { key: 'about.lead2', group_name: 'About', label: 'Second paragraph', kind: 'long', position: 2, value: 'Whiplash is a post-production studio that believes in the power of precision-driven storytelling where every frame is intentional, every cut has weight, and every detail exists.' },
           { key: 'about.lead3', group_name: 'About', label: 'Third paragraph', kind: 'long', position: 3, value: 'We combine strong creative direction with disciplined execution.' },
@@ -459,7 +461,8 @@
 
   // ---------- Page texts ----------
   function viewTexts() {
-    const groups = [...new Set(S.texts.map((t) => t.group_name))];
+    const ORDER = ['Home', 'About', 'Clients', 'Projects', 'Team', 'Contact', 'Search and sharing'];
+    const groups = [...new Set(S.texts.map((t) => t.group_name))].sort((a, b) => (ORDER.indexOf(a) + 1 || 99) - (ORDER.indexOf(b) + 1 || 99));
     const inputs = {};
     const bar = h('div', { class: 'savebar' }, h('span', null, 'You have unsaved changes'));
     const changed = () => S.texts.filter((t) => inputs[t.key].value !== t.value);

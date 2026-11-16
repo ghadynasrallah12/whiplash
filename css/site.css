@@ -1,0 +1,102 @@
+/* =========================================================
+   WHIPLASH — site
+   One viewport. A framed reel, crop marks, six scenes you cut between.
+   Layout knobs: --mx / --my = the margin around the frame.
+   ========================================================= */
+@font-face {
+  font-family: "PP Neue Montreal";
+  src: url("../fonts/PPNeueMontreal-Medium.woff2") format("woff2"), url("../fonts/PPNeueMontreal-Medium.otf") format("opentype");
+  font-weight: 500; font-display: swap;
+}
+@font-face {
+  font-family: "PP Neue Montreal";
+  src: url("../fonts/PPNeueMontreal-Bold.woff2") format("woff2"), url("../fonts/PPNeueMontreal-Bold.otf") format("opentype");
+  font-weight: 700; font-display: swap;
+}
+:root {
+  --bg: #0b0b10;                 /* the dark around the frame */
+  --red: rgb(214 40 34);
+  --ink: #fff;
+  --mx: 7.8vw;                   /* frame margin, left/right */
+  --my: 9vh;                     /* frame margin, top/bottom */
+  --ui: clamp(10px, .68vw, 15px);   /* nav + labels */
+  --crop: clamp(14px, 1.3vw, 30px); /* crop mark arm length */
+  --gap: clamp(6px, .45vw, 10px);   /* crop mark distance from the frame corner */
+  --font: "PP Neue Montreal", "Helvetica Neue", Helvetica, Arial, sans-serif;
+}
+*, *::before, *::after { box-sizing: border-box; }
+html, body { margin: 0; height: 100%; background: var(--bg); color: var(--ink); font-family: var(--font); overflow: hidden; -webkit-font-smoothing: antialiased; }
+a { color: inherit; text-decoration: none; }
+button { font: inherit; color: inherit; background: none; border: 0; padding: 0; cursor: pointer; }
+:focus-visible { outline: 1.5px solid var(--ink); outline-offset: 4px; }
+[hidden] { display: none !important; }
+
+.stage { position: fixed; inset: 0; }
+
+/* ---------- Frame + reel ---------- */
+.frame { position: absolute; inset: var(--my) var(--mx); overflow: hidden; background: #000; }
+.reel { width: 100%; height: 100%; object-fit: cover; filter: grayscale(1) contrast(1.05) brightness(.62); display: block; }
+.cut { position: absolute; inset: 0; background: #000; opacity: 0; pointer-events: none; }
+.is-cutting .cut { opacity: 1; }
+.is-cutting .logo { opacity: 0; }
+
+/* ---------- Crop marks ---------- */
+.crop { position: absolute; width: var(--crop); height: var(--crop); border: 0 solid var(--ink); }
+.crop--tl { left: calc(var(--mx) - var(--gap) - var(--crop)); top: calc(var(--my) - var(--gap) - var(--crop)); border-right-width: 1.5px; border-bottom-width: 1.5px; }
+.crop--tr { right: calc(var(--mx) - var(--gap) - var(--crop)); top: calc(var(--my) - var(--gap) - var(--crop)); border-left-width: 1.5px; border-bottom-width: 1.5px; }
+.crop--bl { left: calc(var(--mx) - var(--gap) - var(--crop)); bottom: calc(var(--my) - var(--gap) - var(--crop)); border-right-width: 1.5px; border-top-width: 1.5px; }
+.crop--br { right: calc(var(--mx) - var(--gap) - var(--crop)); bottom: calc(var(--my) - var(--gap) - var(--crop)); border-left-width: 1.5px; border-top-width: 1.5px; }
+
+/* ---------- Nav + labels (all one small uppercase size) ---------- */
+.nav, .side, .foot { font-size: var(--ui); font-weight: 500; letter-spacing: .05em; text-transform: uppercase; line-height: 1; }
+.nav { position: absolute; left: var(--mx); right: var(--mx); top: 0; height: var(--my); display: flex; justify-content: space-between; align-items: center; padding-bottom: calc(var(--my) * .05); }
+.nav__group { display: flex; gap: clamp(18px, 2vw, 48px); }
+.nav a { padding: 8px 0; transition: color .15s; }
+.nav a:hover { color: var(--red); }
+.nav a[aria-current=page] { color: var(--red); }
+
+.foot { position: absolute; margin: 0; bottom: 0; height: var(--my); display: flex; align-items: center; padding-top: calc(var(--my) * .05); }
+.foot--l { left: var(--mx); }
+.foot--r { right: var(--mx); gap: .7em; }
+.rec { color: var(--red); font-variant-numeric: tabular-nums; display: inline-flex; align-items: center; gap: .45em; }
+.rec i { width: .55em; height: .55em; border-radius: 50%; background: var(--red); animation: blink 1.2s steps(1) infinite; }
+@keyframes blink { 50% { opacity: .15; } }
+
+.side { position: absolute; top: 50%; white-space: nowrap; padding: 10px; }
+.side--l { left: calc(var(--mx) / 2); transform: translate(-50%, -50%) rotate(-90deg); }
+.side--r { right: calc(var(--mx) / 2); transform: translate(50%, -50%) rotate(90deg); }
+.side b { font-weight: 500; opacity: .4; transition: opacity .15s; }
+#sound[aria-pressed=true] [data-on], #sound[aria-pressed=false] [data-off] { opacity: 1; }
+.side:hover { color: var(--red); }
+
+/* ---------- 3D logo ---------- */
+.logo { position: fixed; inset: 0; width: 100%; height: 100%; display: block; pointer-events: none; z-index: 3; }
+
+/* ---------- Scenes 02–06 (placeholders until their designs land) ---------- */
+.scene { position: absolute; inset: 0; background: rgb(0 0 0 / .78); display: grid; place-items: center; padding: 6%; }
+.scene__title { margin: 0; font-weight: 700; font-size: clamp(48px, 11vw, 220px); letter-spacing: -.04em; line-height: .9; text-transform: uppercase; }
+.scene__body { max-width: 62ch; display: grid; gap: 1.1em; }
+.lead { margin: 0; font-weight: 500; font-size: clamp(17px, 1.7vw, 34px); line-height: 1.22; letter-spacing: -.01em; }
+
+/* ---------- Cursor ring (trails the pointer; real cursor stays) ---------- */
+.ring { position: fixed; left: 0; top: 0; width: 30px; height: 30px; margin: -15px 0 0 -15px; border: 1.5px solid var(--ink); border-radius: 50%; pointer-events: none; z-index: 9; opacity: 0; transition: opacity .2s, width .2s, height .2s, margin .2s; }
+.ring.is-on { opacity: 1; }
+.ring.is-big { width: 52px; height: 52px; margin: -26px 0 0 -26px; }
+
+/* ---------- Phone ---------- */
+@media (max-width: 760px) {
+  :root { --mx: 18px; --my: 112px; --ui: 11px; --crop: 12px; --gap: 5px; }
+  .nav { align-items: flex-start; padding: 22px 0 0; }
+  .nav__group { flex-direction: column; gap: 4px; }
+  .nav__group--r { text-align: right; }
+  .nav a { padding: 5px 0; }
+  .side { top: auto; bottom: 70px; transform: none; padding: 6px 0; }
+  .side--l { left: var(--mx); }
+  .side--r { right: var(--mx); }
+  .foot { height: auto; padding: 0; left: var(--mx); right: auto; }
+  .foot--l { bottom: 46px; }
+  .foot--r { bottom: 22px; }
+  .ring { display: none; }
+}
+@media (hover: none) { .ring { display: none; } }
+@media (prefers-reduced-motion: reduce) { .rec i { animation: none; } }

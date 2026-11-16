@@ -135,6 +135,8 @@ select v.name, v.position from (values
 where not exists (select 1 from public.categories);
 
 insert into public.texts (key, group_name, label, kind, value, position) values
+  ('home.tagline',    'Home', 'Line under the film, left',  'short', 'Post-production · Beirut / Dubai / KSA', 1),
+  ('home.reel_label', 'Home', 'Label next to the timecode', 'short', 'Showreel 26', 2),
   ('about.lead1',  'About',   'Opening line',        'long',  'We come from music, not film. That''s why we care so much about timing. If it doesn''t feel right, we don''t move on.', 1),
   ('about.lead2',  'About',   'Second paragraph',    'long',  'Whiplash is a post-production studio that believes in the power of precision-driven storytelling where every frame is intentional, every cut has weight, and every detail exists.', 2),
   ('about.lead3',  'About',   'Third paragraph',     'long',  'We combine strong creative direction with disciplined execution.', 3),

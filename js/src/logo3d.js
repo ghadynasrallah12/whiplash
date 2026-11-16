@@ -12,8 +12,8 @@ const CONFIG = {
   color: 0xd41e12,   // brand red rgb(171,35,27) once lit         // base red
   depth: 14,               // extrusion depth (bar width = 16)
   skewDeg: 0,             // italic slant of the glyph
-  heightVH: 0.17,          // logo height as a fraction of viewport height (desktop)
-  heightVHMobile: 0.14,
+  heightVH: 0.26,          // logo height as a fraction of viewport height (desktop)
+  heightVHMobile: 0.17,
   basePose: { x: 0.10, y: 0.16, z: 0.24 }, // resting orientation (matches the reference render)
   spin: 0.0045,            // radians of turn per pixel of cursor travel
   ease: 0.08,             // follow smoothing
@@ -188,8 +188,8 @@ window.addEventListener('resize', resize);
 resize();
 
 // ---------- Interaction -----------------------------------
-// The cursor DRIVES the rotation: moving right keeps turning the
-// logo right (no limit), moving up/down keeps tipping it. Idle →
+// The cursor DRIVES the rotation, on ONE axis only: moving right keeps turning the
+// logo right, moving left turns it left (no limit). Vertical movement does nothing. Idle →
 // it keeps drifting slowly on its own.
 const target  = { x: 0, y: 0 };   // accumulated turn (radians)
 const current = { x: 0, y: 0 };
@@ -200,7 +200,7 @@ let idleAngle = 0;
 function onPointer(x, y) {
   if (last) {
     target.y += (x - last.x) * CONFIG.spin;    // left/right → turn around vertical axis
-    target.x += (y - last.y) * CONFIG.spin;    // up/down   → tip forward/back
+    // up/down is ignored on purpose: the logo only ever turns left/right
   }
   last = { x, y };
   lastPointer = performance.now();
@@ -217,7 +217,6 @@ window.addEventListener('deviceorientation', (e) => {
   if (e.gamma == null || e.beta == null) return;
   if (lastGyro) {
     target.y += (e.gamma - lastGyro.g) * 0.02;
-    target.x += (e.beta  - lastGyro.b) * 0.02;
   }
   lastGyro = { g: e.gamma, b: e.beta };
   lastPointer = performance.now();
@@ -239,7 +238,7 @@ function animate() {
 
   // idle: slow continuous turn + gentle breathing
   if (idle && !reduceMotion) idleAngle += dt * CONFIG.idleSpeed;
-  const breathe = reduceMotion ? 0 : Math.sin(now * 0.0012) * 0.04;
+  const breathe = 0;   // no tipping: rotation stays on the vertical axis only
 
   // glide to where the current page wants the logo…
   const pe = reduceMotion ? 1 : 0.055;
