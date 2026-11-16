@@ -88,6 +88,15 @@ create table if not exists public.milestones (
   line     text not null default ''
 );
 
+-- Services page: the crafts (Edit, Colour…). Each can have its own short clip for the Whiplash mark.
+create table if not exists public.crafts (
+  id        uuid primary key default gen_random_uuid(),
+  position  int  not null default 0,
+  name      text not null,
+  line      text not null default '',
+  video_url text not null default ''
+);
+
 create table if not exists public.texts (
   key        text primary key,                   -- "about.lead1"
   group_name text not null,                      -- "About"
@@ -111,6 +120,7 @@ alter table public.clients    enable row level security;
 alter table public.texts      enable row level security;
 alter table public.chapters   enable row level security;
 alter table public.milestones enable row level security;
+alter table public.crafts     enable row level security;
 
 drop policy if exists "editors read"     on public.editors;
 create policy "editors read" on public.editors for select using (public.is_editor());
@@ -146,6 +156,11 @@ drop policy if exists "editor write" on public.milestones;
 create policy "public read"  on public.milestones for select using (true);
 create policy "editor write" on public.milestones for all using (public.is_editor()) with check (public.is_editor());
 
+drop policy if exists "public read"  on public.crafts;
+drop policy if exists "editor write" on public.crafts;
+create policy "public read"  on public.crafts for select using (true);
+create policy "editor write" on public.crafts for all using (public.is_editor()) with check (public.is_editor());
+
 -- ---------- Uploaded images and clips ----------
 -- One public bucket: anyone can view a file by its link, only editors can add / replace / delete.
 insert into storage.buckets (id, name, public, file_size_limit)
@@ -174,6 +189,17 @@ select v.title, v.caption, v.position, v.page from (values
 ) as v(title, caption, position, page)
 where not exists (select 1 from public.chapters);
 
+insert into public.crafts (name, line, position)
+select v.name, v.line, v.position from (values
+  ('Edit',   'The cut, the rhythm, the story.', 1),
+  ('Colour', 'The grade that sets the mood.',   2),
+  ('VFX',    'What wasn''t there on set.',      3),
+  ('Sound',  'Design, mix and music.',          4),
+  ('Online', 'Finishing and delivery.',         5),
+  ('Motion', 'Titles, type and movement.',      6)
+) as v(name, line, position)
+where not exists (select 1 from public.crafts);
+
 insert into public.milestones (year, title, line, position)
 select v.year, v.title, v.line, v.position from (values
   ('20XX', 'Founded in Beirut',       'Two editors, one room, one deadline.', 1),
@@ -195,6 +221,11 @@ insert into public.texts (key, group_name, label, kind, value, position) values
   ('about.small2', 'About',   'Small text, right',   'long',  'From offline to online edit, VFX, grading, and full creative direction, we shape every stage of the process; designing rhythm, flow, visual language, and sound to create films that don''t just tell stories, but stay with people.', 5),
   ('countries.since',   'About: Countries page', 'Small label (after "[02] About —")', 'short', 'Since 20XX', 1),
   ('countries.line',    'About: Countries page', 'Sentence under the city name',       'long',  'Born in Beirut. Cutting for Dubai and KSA. Every frame intentional, every cut with weight.', 2),
+  ('services.head1',    'About: Services page', 'Headline, white line',            'short', 'Six crafts.', 1),
+  ('services.head2',    'About: Services page', 'Headline, red line',              'short', 'One room.', 2),
+  ('services.try1',     'About: Services page', 'Before/after button, small label', 'short', 'Before / after', 3),
+  ('services.try2',     'About: Services page', 'Before/after button, main text',   'short', 'Drag the cut yourself', 4),
+  ('try.line',          'About: Services page', 'Sentence on the before/after page', 'long', 'We don''t just finish films. We finish the story.', 5),
   ('contact.email',     'Contact', 'Email',          'short', '', 1),
   ('contact.phone',     'Contact', 'Phone',          'short', '', 2),
   ('contact.address',   'Contact', 'Address',        'long',  '', 3),

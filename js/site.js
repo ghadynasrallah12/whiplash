@@ -30,6 +30,7 @@
   // put everything in its resting state for scene i, no animation
   function snap(i) {
     var name = SCENES[i];
+    if (typeof closeTry === 'function') closeTry(true);
     setState(i);
     LOGO().setMode(name === 'home' ? 'home' : name === 'about' ? 'flood' : 'hidden');
     about.classList.add('no-anim');
@@ -59,6 +60,7 @@
   // About → Home: the same thing backwards
   function closeAbout() {
     locked = true;
+    closeTry(true);
     drawLogo(true);
     about.classList.remove('is-in', 'is-open', 'is-settled');
     setState(0);
@@ -91,6 +93,7 @@
   function step(dir) { if (!locked) cutTo(current + dir); }
   // Scrolling and swiping do NOT change pages (by request): pages change on click, or with the arrow keys.
   window.addEventListener('keydown', function (e) {
+    if (tryOpen) return;
     if (['ArrowRight', 'ArrowDown', 'PageDown'].indexOf(e.key) > -1) step(1);
     if (['ArrowLeft', 'ArrowUp', 'PageUp'].indexOf(e.key) > -1) step(-1);
   });
@@ -322,11 +325,225 @@
   }
   resetMap();
 
+  // ---------- Services: the crafts ----------
+  // Fallback crafts; the dashboard (About → Services) replaces them. start = second of the reel to show
+  // when a craft has no clip of its own.
+  var CRAFTS = [
+    { name: 'Edit',   line: 'The cut, the rhythm, the story.', video_url: '' },
+    { name: 'Colour', line: 'The grade that sets the mood.',   video_url: '' },
+    { name: 'VFX',    line: "What wasn't there on set.",        video_url: '' },
+    { name: 'Sound',  line: 'Design, mix and music.',           video_url: '' },
+    { name: 'Online', line: 'Finishing and delivery.',          video_url: '' },
+    { name: 'Motion', line: 'Titles, type and movement.',       video_url: '' },
+  ];
+  var svc = document.getElementById('svc'), svcList = document.getElementById('svc-list'), svcVideo = document.getElementById('svc-video'), svcCap = document.getElementById('svc-cap');
+  var craft = 0, craftT;
+  function reelSrc() { return reel.currentSrc || reel.src || 'assets/hero.mp4'; }
+  function renderCrafts() {
+    svcList.textContent = '';
+    CRAFTS.forEach(function (c, i) {
+      var li = el('li', 'svc__row'); li.style.setProperty('--i', i); li.tabIndex = 0;
+      var w = el('span', 'svc__w0'); w.appendChild(el('span', '', c.name));
+      li.appendChild(el('span', 'svc__n', '[' + two(i + 1) + ']')); li.appendChild(w); li.appendChild(el('p', 'svc__d', c.line));
+      li.addEventListener('pointerenter', function (e) { if (e.pointerType === 'mouse') pickCraft(i, true); });
+      li.addEventListener('click', function () { pickCraft(i, true); });
+      li.addEventListener('focus', function () { pickCraft(i, false); });
+      svcList.appendChild(li);
+    });
+  }
+  function craftClip(i, video) {
+    var c = CRAFTS[i], src = c.video_url || reelSrc();
+    if (video.getAttribute('src') !== src) { video.src = src; }
+    if (!c.video_url) {   // one reel for every craft: each craft starts at its own moment of it
+      var seek = function () { if (video.duration) video.currentTime = (video.duration * i / Math.max(CRAFTS.length, 1)) % video.duration; };
+      if (video.readyState >= 1) seek(); else video.addEventListener('loadedmetadata', seek, { once: true });
+    }
+    video.play().catch(function () {});
+  }
+  function pickCraft(i, fx) {
+    if (!svcList.children[i]) return;
+    var same = i === craft && svcList.children[i].classList.contains('is-active');
+    craft = i;
+    [].forEach.call(svcList.children, function (r, k) { r.classList.toggle('is-active', k === i); });
+    svcCap.textContent = '[' + two(i + 1) + '] ' + CRAFTS[i].name + ' — Hover a craft, the W plays it';
+    if (same) return;
+    if (fx && svc.classList.contains('is-settled')) { scramble(svcList.children[i].querySelector('.svc__w0 > span'), CRAFTS[i].name); tick(1, .5); }
+    clearTimeout(craftT); svcVideo.classList.add('is-swapping');
+    craftT = setTimeout(function () { craftClip(i, svcVideo); svcVideo.classList.remove('is-swapping'); }, 170);
+  }
+  renderCrafts();
+  function playServices() {
+    svc.classList.remove('is-settled');
+    craft = -1; pickCraft(0, false);
+    later(function () { svc.classList.add('is-settled'); }, reduce ? 0 : 1900);
+  }
+  function resetServices() { svc.classList.remove('is-settled'); svcVideo.pause(); }
+
+  // ---------- Before / after ----------
+  var tryEl = document.getElementById('try'), tryStage = document.getElementById('try-stage'), trySplit = document.getElementById('try-split');
+  var vBefore = document.getElementById('try-before'), vAfter = document.getElementById('try-after');
+  var tryOpen = false, tryX = 50, tryRaf = 0, tryTimers = [];
+  var FX = {   // what the left side shows for each craft, and the two words
+    edit:   ['Raw', 'Cut'],     colour: ['Log', 'Grade'],   vfx:    ['Plate', 'Comp'],
+    sound:  ['Silent', 'Mix'],  online: ['Proxy', 'Master'], motion: ['Still', 'Motion'],
+  };
+  var FX_KEYS = Object.keys(FX);
+  function fxOf(i) { var k = String((CRAFTS[i] || {}).name || '').toLowerCase(); return FX[k] ? k : FX_KEYS[i % FX_KEYS.length]; }
+  function setX(pct) {
+    tryX = Math.max(0, Math.min(100, pct));
+    tryEl.style.setProperty('--x', tryX + '%');
+    trySplit.setAttribute('aria-valuenow', Math.round(tryX));
+  }
+  function renderChips(active) {
+    var box = document.getElementById('try-chips'); box.textContent = '';
+    CRAFTS.forEach(function (c, i) {
+      var b = el('button', '', '[' + c.name + ']'); b.type = 'button'; b.setAttribute('role', 'tab'); b.setAttribute('aria-selected', String(i === active));
+      b.addEventListener('click', function () { setFx(i, true); });
+      box.appendChild(b);
+    });
+  }
+  var fxIndex = 0;
+  function setFx(i, anim) {
+    fxIndex = i;
+    var key = fxOf(i), words = FX[key];
+    tryEl.dataset.fx = key;
+    [].forEach.call(document.getElementById('try-chips').children, function (b, k) { b.setAttribute('aria-selected', String(k === i)); });
+    var a = document.querySelector('#try-wa > span'), b = document.querySelector('#try-wb > span');
+    a.parentNode.style.setProperty('--len', Math.max(3, words[0].length)); b.parentNode.style.setProperty('--len', Math.max(3, words[1].length));   // longer words set smaller so they fit
+    if (anim) { scramble(a, words[0].toUpperCase()); scramble(b, words[1].toUpperCase()); tick(1, .5); }
+    else { a.textContent = words[0]; b.textContent = words[1]; }
+    if (key !== 'motion') vBefore.play().catch(function () {}); else vBefore.pause();
+  }
+  // keep the two films on the same frame. "Motion" before = stop-motion: the left only steps 6 times a second
+  var lastStep = 0;
+  function syncLoop() {
+    if (!tryOpen) return;
+    if (tryEl.dataset.fx === 'motion') {
+      if (Math.abs(vAfter.currentTime - lastStep) > 1 / 6) { lastStep = vAfter.currentTime; vBefore.currentTime = lastStep; }
+    } else if (Math.abs(vBefore.currentTime - vAfter.currentTime) > .12) vBefore.currentTime = vAfter.currentTime;
+    tryRaf = requestAnimationFrame(syncLoop);
+  }
+
+  // sound of the cut: a record being scratched (forward and backward, pitch follows the hand) + a frame click every few %
+  var scr = null;
+  function buildScratch() {
+    if (scr || !ac) return scr;
+    try {
+      var sr = ac.sampleRate, n = Math.floor(sr * 1.6), fwd = ac.createBuffer(1, n, sr), rev = ac.createBuffer(1, n, sr), d = fwd.getChannelData(0), r = rev.getChannelData(0);
+      var F = [[700, 1], [1220, .55], [2600, .25]], f0 = 146.8;   // an "ahh": a voice-like tone, the classic scratch sample
+      for (var t = 0; t < n; t++) {
+        var tt = t / sr, v = 0, vib = f0 * (1 + .012 * Math.sin(2 * Math.PI * 5 * tt));
+        for (var k = 1; k * f0 < 4200; k++) {
+          var hz = k * vib, w = 0;
+          F.forEach(function (f) { w += f[1] * Math.exp(-Math.pow((hz - f[0]) / 160, 2)); });
+          v += (w + .04) * Math.sin(2 * Math.PI * hz * tt) / Math.sqrt(k);
+        }
+        d[t] = v * .22 + (Math.random() * 2 - 1) * .03;
+      }
+      for (var j = 0; j < n; j++) r[j] = d[n - 1 - j];
+      var make = function (buf) {
+        var src = ac.createBufferSource(), g = ac.createGain(); src.buffer = buf; src.loop = true; g.gain.value = 0;
+        src.connect(g); src.start(); return { src: src, g: g };
+      };
+      var lp = ac.createBiquadFilter(); lp.type = 'lowpass'; lp.frequency.value = 1800; lp.Q.value = 1.2;
+      var out = ac.createGain(); out.gain.value = .9;
+      var A = make(fwd), B = make(rev); A.g.connect(lp); B.g.connect(lp); lp.connect(out).connect(ac.destination);
+      scr = { A: A, B: B, lp: lp };
+    } catch (e) { scr = null; }
+    return scr;
+  }
+  var scrIdle;
+  function scratch(v) {   // v = how fast the line moves, in % of the screen per second (sign = direction)
+    if (reduce || !ac || !soundOn || ac.state !== 'running' || !buildScratch()) return;
+    var t = ac.currentTime, sp = Math.min(Math.abs(v) / 55, 3.2), vol = Math.min(Math.abs(v) / 90, 1) * .55;
+    var on = v >= 0 ? scr.A : scr.B, off = v >= 0 ? scr.B : scr.A;
+    on.src.playbackRate.setTargetAtTime(Math.max(.08, sp), t, .012);
+    on.g.gain.setTargetAtTime(vol, t, .012); off.g.gain.setTargetAtTime(0, t, .008);
+    scr.lp.frequency.setTargetAtTime(700 + sp * 1600, t, .02);
+    clearTimeout(scrIdle);
+    scrIdle = setTimeout(function () { if (scr) { scr.A.g.gain.setTargetAtTime(0, ac.currentTime, .03); scr.B.g.gain.setTargetAtTime(0, ac.currentTime, .03); } }, 70);
+  }
+  function frameClick() {
+    if (reduce || !ac || !soundOn || ac.state !== 'running') return;
+    try {
+      var t = ac.currentTime, len = Math.floor(ac.sampleRate * .006), buf = ac.createBuffer(1, len, ac.sampleRate), d = buf.getChannelData(0);
+      for (var i = 0; i < len; i++) d[i] = (Math.random() * 2 - 1) * Math.pow(1 - i / len, 2);
+      var s2 = ac.createBufferSource(), hp = ac.createBiquadFilter(), g = ac.createGain();
+      s2.buffer = buf; hp.type = 'highpass'; hp.frequency.value = 2500; g.gain.value = .35;
+      s2.connect(hp).connect(g).connect(ac.destination); s2.start(t);
+    } catch (e) { /* no audio */ }
+  }
+
+  // dragging the cut
+  var drag = null, lastNotch = Math.round(50 / 4);
+  function moveTo(pct, now) {
+    var dt = Math.max((now - (drag ? drag.t : now)) / 1000, 1 / 240), v = drag ? (pct - drag.x) / dt : 0;
+    setX(pct);
+    if (drag) { scratch(v); drag.x = tryX; drag.t = now; }
+    var notch = Math.round(tryX / 4); if (notch !== lastNotch) { lastNotch = notch; frameClick(); }
+  }
+  tryStage.addEventListener('pointerdown', function (e) {
+    if (!tryOpen || e.button > 0) return;
+    unlockSound(); tryStage.setPointerCapture(e.pointerId);
+    drag = { x: tryX, t: performance.now() }; tryEl.classList.add('is-dragging');
+    moveTo(e.clientX / innerWidth * 100, performance.now());
+  });
+  tryStage.addEventListener('pointermove', function (e) { if (drag) moveTo(e.clientX / innerWidth * 100, performance.now()); });
+  function endDrag() { if (!drag) return; drag = null; tryEl.classList.remove('is-dragging'); scratch(0); }
+  tryStage.addEventListener('pointerup', endDrag); tryStage.addEventListener('pointercancel', endDrag);
+  trySplit.addEventListener('keydown', function (e) {
+    var step = e.shiftKey ? 10 : 3;
+    if (e.key === 'ArrowLeft' || e.key === 'ArrowRight') {
+      e.preventDefault(); e.stopPropagation();
+      drag = { x: tryX, t: performance.now() - 60 }; moveTo(tryX + (e.key === 'ArrowRight' ? step : -step), performance.now()); drag = null;
+    }
+  });
+
+  // a little demo when the page opens: the cut swings left and right once, then rests in the middle
+  function demoSwing() {
+    var keys = [[0, 50], [450, 34], [1000, 64], [1450, 50]], start = performance.now(), prev = 50;
+    drag = { x: 50, t: start };
+    (function step(now) {
+      if (!tryOpen || !drag || tryEl.classList.contains('is-dragging')) return;
+      var e = now - start, k = 1;
+      while (k < keys.length - 1 && e > keys[k][0]) k++;
+      var a = keys[k - 1], b = keys[k], p = Math.min(1, Math.max(0, (e - a[0]) / (b[0] - a[0]))), ease = p < .5 ? 2 * p * p : 1 - Math.pow(-2 * p + 2, 2) / 2;
+      moveTo(a[1] + (b[1] - a[1]) * ease, now);
+      if (e < keys[keys.length - 1][0]) requestAnimationFrame(step); else { drag = null; scratch(0); }
+    })(start);
+  }
+
+  function openTry() {
+    if (tryOpen) return;
+    tryOpen = true; unlockSound();
+    var src = reelSrc();
+    [vBefore, vAfter].forEach(function (v) { if (v.getAttribute('src') !== src) v.src = src; v.currentTime = 0; v.play().catch(function () {}); });
+    renderChips(fxIndex); setFx(fxIndex, false); setX(50);
+    tryEl.hidden = false; tryEl.classList.remove('is-in', 'is-out', 'is-open'); void tryEl.offsetWidth;
+    tryEl.classList.add('is-open');                         // the red line drops
+    tryTimers.push(setTimeout(function () { tryEl.classList.add('is-in'); tick(1, .6); }, reduce ? 0 : 380));   // …and the film opens out of it
+    tryTimers.push(setTimeout(demoSwing, reduce ? 99999 : 2300));
+    tryRaf = requestAnimationFrame(syncLoop);
+    setTimeout(function () { trySplit.focus({ preventScroll: true }); }, 1400);
+  }
+  function closeTry(instant, then) {
+    if (!tryOpen) { if (then) then(); return; }
+    tryOpen = false; drag = null; scratch(0); cancelAnimationFrame(tryRaf); tryTimers.forEach(clearTimeout); tryTimers = [];
+    var done = function () { tryEl.hidden = true; tryEl.classList.remove('is-in', 'is-out', 'is-open', 'is-dragging'); vBefore.pause(); vAfter.pause(); if (then) then(); };
+    if (instant || reduce) return done();
+    tryEl.classList.add('is-out'); tick(-1, .5);
+    setTimeout(done, 600);
+  }
+  document.getElementById('svc-try').addEventListener('click', openTry);
+  document.getElementById('try-back').addEventListener('click', function () { closeTry(false, function () { document.getElementById('svc-try').focus({ preventScroll: true }); }); });
+  document.getElementById('try-next').addEventListener('click', function () { closeTry(true); cutTo(SCENES.indexOf('clients')); });
+  window.addEventListener('keydown', function (e) { if (e.key === 'Escape' && tryOpen) closeTry(false); }, true);
+
   // ---------- chapter pages: shared open / switch / close ----------
-  var PAGES = { timeline: hist, map: mapEl }, det = null, dfoot = document.getElementById('dfoot');
+  var PAGES = { timeline: hist, map: mapEl, services: svc }, det = null, dfoot = document.getElementById('dfoot');
   function pageOf(i) {
     var c = CHAPTERS[i]; if (!c) return '';
-    return c.page || ({ history: 'timeline', countries: 'map' })[String(c.title).toLowerCase()] || '';
+    return c.page || ({ history: 'timeline', countries: 'map', services: 'services' })[String(c.title).toLowerCase()] || '';
   }
   function fillFoot(i) {
     var back = document.getElementById('hist-back'), next = document.getElementById('hist-next'), box = document.getElementById('hist-chapters');
@@ -343,7 +560,8 @@
     next.onclick = function () { closeDetail(nx); };
   }
   function hidePages() {
-    [hist, mapEl].forEach(function (p) { p.hidden = true; p.classList.remove('is-in', 'is-out'); });
+    [hist, mapEl, svc].forEach(function (p) { p.hidden = true; p.classList.remove('is-in', 'is-out'); });
+    resetServices(); body.classList.remove('is-dark');
     tlHead.classList.remove('is-on');
     [].forEach.call(tlItems.children, function (li) { li.classList.remove('is-on'); });
     resetMap();
@@ -351,6 +569,7 @@
   function showPage(i) {
     var kind = pageOf(i); det = PAGES[kind]; chapter = i;
     about.dataset.detail = kind; fillFoot(i);
+    body.classList.toggle('is-dark', kind === 'services');
     if (kind === 'timeline') {
       document.getElementById('hist-n').textContent = '[' + two(i + 1) + ']';
       document.getElementById('hist-word').textContent = CHAPTERS[i].title;
@@ -358,14 +577,14 @@
     }
     det.hidden = false; void det.offsetWidth;
     about.classList.add('is-detail-on'); det.classList.add('is-in'); dfoot.classList.add('is-in');
-    if (kind === 'timeline') playTimeline(); else { layoutRoutes(false); playMap(); }
+    if (kind === 'timeline') playTimeline(); else if (kind === 'services') playServices(); else { layoutRoutes(false); playMap(); }
   }
   function openDetail(i) {
     if (locked || !pageOf(i)) return;
     if (detailOpen) return switchDetail(i);
     detailOpen = true; histTimers.forEach(clearTimeout); histTimers = [];
     setChapter(i, true);
-    var stays = pageOf(i) === 'timeline';            // History keeps its word as the page title; on the map every word leaves
+    var stays = pageOf(i) === 'timeline';            // History keeps its word as the page title; on the other pages every word leaves
     for (var k = 0; k < chTrack.children.length; k++) chTrack.children[k].classList.toggle('is-picked', stays && k === i);
     chTrack.children[i].classList.remove('is-hover');
     var word = chTrack.children[i].querySelector('.ch__t > span'); clearInterval(scTimers.get(word)); word.textContent = CHAPTERS[i].title;   // stop any letter shuffle mid-way
@@ -476,6 +695,9 @@
     rest('chapters?select=*&order=position').then(function (rows) {
       if (rows.length) { CHAPTERS = rows; renderChapters(); }
     }).catch(function () { /* table not there yet: keep the built-in chapters */ });
+    rest('crafts?select=name,line,video_url&order=position').then(function (rows) {
+      if (rows.length) { CRAFTS = rows; renderCrafts(); }
+    }).catch(function () { /* keep the built-in crafts */ });
     rest('milestones?select=year,title,line&order=position').then(function (rows) {
       if (rows.length) { MILESTONES = rows; renderTimeline(); }
     }).catch(function () { /* keep the built-in dates */ });

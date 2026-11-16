@@ -94,6 +94,21 @@
       </svg>
     </div>
 
+
+    <!-- Services: the crafts. Hover one and the Whiplash mark plays it. -->
+    <div class="svc" id="svc" hidden>
+      <ol class="svc__list" id="svc-list"></ol>
+      <figure class="svc__w">
+        <div class="svc__wwrap"><div class="svc__wbox"><video id="svc-video" muted loop playsinline preload="metadata"></video></div></div>
+        <figcaption id="svc-cap"></figcaption>
+      </figure>
+      <p class="svc__head"><span class="svc__ln"><span data-text="services.head1">Six crafts.</span></span><span class="svc__ln svc__ln--red"><span data-text="services.head2">One room.</span></span></p>
+      <button class="svc__try" id="svc-try" type="button">
+        <span class="svc__tryicon" aria-hidden="true"><svg viewBox="0 0 40 16"><path d="M0 8l12-8v16zM40 8l-12-8v16z"/></svg></span>
+        <span class="svc__trytext"><span data-text="services.try1">Before / after</span><b data-text="services.try2">Drag the cut yourself</b></span>
+      </button>
+    </div>
+
     <!-- shared footer of the chapter pages: previous · all chapters · next -->
     <div class="dfoot" id="dfoot">
       <i class="tl__rule"></i>
@@ -102,6 +117,29 @@
       <button class="hist__next" id="hist-next" type="button"></button>
     </div>
   </section>
+
+  <!-- Before / after: one film, split by a cut you can drag. Opened from Services. -->
+  <section class="try" id="try" aria-label="Before and after" hidden>
+    <div class="try__stage" id="try-stage">
+      <div class="try__layer try__before"><video id="try-before" muted loop playsinline preload="auto"></video><i class="try__fx" aria-hidden="true"></i><span class="try__word try__word--a" id="try-wa" aria-hidden="true"><span>Raw</span></span></div>
+      <div class="try__layer try__after"><video id="try-after" muted loop playsinline preload="auto"></video><span class="try__word try__word--b" id="try-wb" aria-hidden="true"><span>Cut</span></span></div>
+      <div class="try__split" id="try-split" role="slider" tabindex="0" aria-label="Before and after" aria-valuemin="0" aria-valuemax="100" aria-valuenow="50">
+        <i class="try__line"></i>
+        <span class="try__handle"><svg viewBox="0 0 40 16" aria-hidden="true"><path d="M0 8l12-8v16zM40 8l-12-8v16z"/></svg></span>
+      </div>
+    </div>
+    <div class="try__copy">
+      <p class="try__text" data-text="try.line">We don't just finish films. We finish the story.</p>
+      <div class="try__chips" id="try-chips" role="tablist" aria-label="Crafts"></div>
+    </div>
+    <div class="try__foot">
+      <i class="try__rule"></i>
+      <button id="try-back" type="button">← Services</button>
+      <span class="try__hint">Drag the line</span>
+      <button id="try-next" type="button">[03] Clients →</button>
+    </div>
+  </section>
+  <svg width="0" height="0" style="position:absolute" aria-hidden="true"><clipPath id="wclip" clipPathUnits="objectBoundingBox"><path d="M0 0H21.2V82A21.2 21.2 0 0 1 0 60.8Z" transform="scale(.0093809 .01)"/><path d="M42.7 0H63.9V60.6A21.4 21.4 0 0 0 85.3 82H106.6V100H39.3A18 18 0 0 1 21.3 82A21.4 21.4 0 0 0 42.7 60.6Z" transform="scale(.0093809 .01)"/><path d="M85.4 0H106.6V60.6H93.4A8 8 0 0 1 85.4 52.6Z" transform="scale(.0093809 .01)"/></clipPath></svg>
 
   <!-- 3D logo (turns left/right only) -->
   <canvas id="logo" class="logo" aria-label="Whiplash logo"></canvas>

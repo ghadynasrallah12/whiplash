@@ -84,6 +84,7 @@
         projects: P.map((p, i) => ({ id: 'p-' + i, position: i + 1, name: p[0], type: p[1], category_id: cat(p[2]), description: 'Driven by sound design as much as image, we shape a complete sensory experience; where audio and visuals work seamlessly and land deeply, memorably and with impact.', thumb_url: '../assets/' + p[3] + '.jpg', video_url: i === 0 ? '../assets/hero.mp4' : '', film_link: 'https://vimeo.com/', logo_url: '', award_url: '', credits: cr, is_hero: i === 0, published: i !== 9 })),
         chapters: [['History', 'Since 20XX', 'work-7'], ['Countries', 'Beirut / Dubai / KSA', 'work-5'], ['Services', 'Edit to delivery', 'work-1']].map((c, i) => ({ id: 'ch-' + i, position: i + 1, title: c[0], caption: c[1], image_url: '../assets/' + c[2] + '.jpg' })),
         milestones: [['Founded in Beirut', 'Two editors, one room, one deadline.'], ['First global brand', 'The cut that put us on the map.'], ['Colour & sound in-house', 'Every craft under one roof.'], ['Dubai', 'A second home for the studio.'], ['KSA', 'Cutting for the Kingdom.'], ['Now', 'Still obsessed with the frame.']].map((m, i, all) => ({ id: 'ms-' + i, position: i + 1, year: i === all.length - 1 ? '2026' : '20XX', title: m[0], line: m[1] })),
+        crafts: [['Edit', 'The cut, the rhythm, the story.'], ['Colour', 'The grade that sets the mood.'], ['VFX', "What wasn't there on set."], ['Sound', 'Design, mix and music.'], ['Online', 'Finishing and delivery.'], ['Motion', 'Titles, type and movement.']].map((c, i) => ({ id: 'cr-' + i, position: i + 1, name: c[0], line: c[1], video_url: '' })),
         clients: ['Sample Client', 'Another Brand', 'Agency Name'].map((name, i) => ({ id: 'c-' + i, position: i + 1, name, logo_url: '', website: '' })),
         texts: [
           { key: 'home.tagline', group_name: 'Home', label: 'Line under the film, left', kind: 'short', position: 1, value: 'Post-production · Beirut / Dubai / KSA' },
@@ -93,6 +94,11 @@
           { key: 'about.lead3', group_name: 'About', label: 'Third paragraph', kind: 'long', position: 3, value: 'We combine strong creative direction with disciplined execution.' },
           { key: 'countries.since', group_name: 'About: Countries page', label: 'Small label (after "[02] About —")', kind: 'short', position: 1, value: 'Since 20XX' },
           { key: 'countries.line', group_name: 'About: Countries page', label: 'Sentence under the city name', kind: 'long', position: 2, value: 'Born in Beirut. Cutting for Dubai and KSA. Every frame intentional, every cut with weight.' },
+          { key: 'services.head1', group_name: 'About: Services page', label: 'Headline, white line', kind: 'short', position: 1, value: 'Six crafts.' },
+          { key: 'services.head2', group_name: 'About: Services page', label: 'Headline, red line', kind: 'short', position: 2, value: 'One room.' },
+          { key: 'services.try1', group_name: 'About: Services page', label: 'Before/after button, small label', kind: 'short', position: 3, value: 'Before / after' },
+          { key: 'services.try2', group_name: 'About: Services page', label: 'Before/after button, main text', kind: 'short', position: 4, value: 'Drag the cut yourself' },
+          { key: 'try.line', group_name: 'About: Services page', label: 'Sentence on the before/after page', kind: 'long', position: 5, value: "We don't just finish films. We finish the story." },
           { key: 'contact.email', group_name: 'Contact', label: 'Email', kind: 'short', position: 1, value: '' },
           { key: 'contact.phone', group_name: 'Contact', label: 'Phone', kind: 'short', position: 2, value: '' },
           { key: 'contact.address', group_name: 'Contact', label: 'Address', kind: 'long', position: 3, value: '' },
@@ -107,7 +113,8 @@
     };
     try { db = JSON.parse(localStorage.getItem(KEY)) || seed(); } catch (e) { db = seed(); }
     if (!db.chapters) db.chapters = seed().chapters;
-    if (!db.milestones) db.milestones = seed().milestones;   // demo data saved before the About page existed
+    if (!db.milestones) db.milestones = seed().milestones;
+    if (!db.crafts) db.crafts = seed().crafts;   // demo data saved before the About page existed
     const persist = () => { try { localStorage.setItem(KEY, JSON.stringify(db)); } catch (e) { toast('This browser is out of demo storage. Use smaller images.', true); } };
     const wait = (v) => new Promise((r) => setTimeout(() => r(v), 120));
     const shrink = (file) => new Promise((res, rej) => {   // keep demo images small enough for localStorage
@@ -120,7 +127,7 @@
       async signIn(email) { db.session = { id: 'me', email: email || 'you@whiplash.demo', name: 'You', role: 'owner' }; db.editors[0].email = db.session.email; persist(); return wait(db.session); },
       async signOut() { db.session = null; persist(); },
       async setPassword() { return wait(); },
-      async loadAll() { return wait(JSON.parse(JSON.stringify({ projects: db.projects, categories: db.categories, clients: db.clients, chapters: db.chapters, milestones: db.milestones, texts: db.texts, editors: db.editors }))); },
+      async loadAll() { return wait(JSON.parse(JSON.stringify({ projects: db.projects, categories: db.categories, clients: db.clients, chapters: db.chapters, milestones: db.milestones, crafts: db.crafts, texts: db.texts, editors: db.editors }))); },
       async save(table, row) { const r = { ...row }; if (!r.id) { r.id = uid(); db[table].push(r); } else db[table] = db[table].map((x) => (x.id === r.id ? r : x)); persist(); return wait(r); },
       async patch(table, id, fields) { db[table] = db[table].map((x) => (x.id === id ? { ...x, ...fields } : x)); persist(); },
       async remove(table, id) { db[table] = db[table].filter((x) => x.id !== id); if (table === 'categories') db.projects.forEach((p) => { if (p.category_id === id) p.category_id = null; }); persist(); return wait(); },
@@ -165,10 +172,11 @@
       async loadAll() {
         const chapters = await sb.from('chapters').select('*').order('position');
         const milestones = await sb.from('milestones').select('*').order('position');
+        const crafts = await sb.from('crafts').select('*').order('position');
         const [projects, categories, clients, texts, editors] = await Promise.all([
           sb.from('projects').select('*').order('position'), sb.from('categories').select('*').order('position'),
           sb.from('clients').select('*').order('position'), sb.from('texts').select('*').order('position'), sb.from('editors').select('*').order('created_at')]);
-        return { projects: ok(projects), categories: ok(categories), clients: ok(clients), chapters: chapters.error ? null : chapters.data, milestones: milestones.error ? null : milestones.data, texts: ok(texts), editors: ok(editors) };
+        return { projects: ok(projects), categories: ok(categories), clients: ok(clients), chapters: chapters.error ? null : chapters.data, milestones: milestones.error ? null : milestones.data, crafts: crafts.error ? null : crafts.data, texts: ok(texts), editors: ok(editors) };
       },
       async save(table, row) {
         const { id, created_at, updated_at, ...fields } = row;
@@ -204,7 +212,7 @@
   }
 
   const api = LIVE ? liveApi() : demoApi();
-  const S = { user: null, view: 'projects', q: '', cat: '', projects: [], categories: [], clients: [], chapters: [], milestones: [], texts: [], editors: [] };
+  const S = { user: null, view: 'projects', q: '', cat: '', projects: [], categories: [], clients: [], chapters: [], milestones: [], crafts: [], texts: [], editors: [] };
 
   // =========================================================
   // UI PIECES
@@ -490,7 +498,8 @@
       h('div', { class: 'head' }, h('div', null, h('h1', null, 'About'), h('p', null, 'The chapters on the About page, in this order. Visitors pick one to see its picture.')),
         h('div', { class: 'head__actions' }, h('button', { class: 'btn btn--red', onclick: () => editChapter() }, 'New chapter'))),
       list,
-      timelineBlock()];
+      timelineBlock(),
+      craftsBlock()];
   }
   // the dates on the History page
   function timelineBlock() {
@@ -509,6 +518,48 @@
     if (!all.length) list.append(h('div', { class: 'empty' }, h('h3', null, 'No dates yet'), 'Add the first moment in the studio\'s story.'));
     sortable(list, 'milestones', '.item');
     return h('div', null, head(h('div', { class: 'head__actions' }, h('button', { class: 'btn', onclick: () => editMilestone() }, 'New date'))), list);
+  }
+  // the crafts on the Services page
+  function craftsBlock() {
+    const head = (extra) => h('div', { class: 'head', style: 'margin-top:56px' }, h('div', null, h('h2', { style: 'font:700 30px/1 var(--display);letter-spacing:-.025em' }, 'Services'), h('p', null, 'The crafts listed on the Services page, and the buttons on the before/after page. Hovering a craft plays its clip inside the Whiplash mark. Without a clip, a moment of the homepage film is used.')), extra);
+    if (S.crafts === null) return h('div', null, head(), h('div', { class: 'list' }, h('div', { class: 'empty' }, h('h3', null, 'One setup step is missing'), 'Run supabase/schema.sql again in the Supabase SQL Editor, then reload this page.')));
+    const all = S.crafts.slice().sort(byPos);
+    const list = h('div', { class: 'list' });
+    all.forEach((c, i) => list.append(h('div', { class: 'item item--plain', 'data-id': c.id, draggable: true },
+      h('span', { class: 'grip', html: ICON.grip, title: 'Drag to reorder' }),
+      h('span', { class: 'item__n' }, pad2(i + 1)),
+      h('button', { class: 'item__main', onclick: () => editCraft(c) }, h('span', { class: 'item__name' }, c.name), h('div', { class: 'item__meta' }, (c.video_url ? 'Own clip. ' : '') + c.line)),
+      h('div', { class: 'item__acts' },
+        h('button', { class: 'icon-btn move', 'aria-label': 'Move up', html: ICON.up, disabled: i === 0, onclick: () => nudge('crafts', c.id, -1) }),
+        h('button', { class: 'icon-btn move', 'aria-label': 'Move down', html: ICON.down, disabled: i === all.length - 1, onclick: () => nudge('crafts', c.id, 1) }),
+        h('button', { class: 'icon-btn', 'aria-label': 'Edit ' + c.name, html: ICON.edit, onclick: () => editCraft(c) })))));
+    if (!all.length) list.append(h('div', { class: 'empty' }, h('h3', null, 'No crafts yet'), 'Add the first service the studio offers.'));
+    sortable(list, 'crafts', '.item');
+    return h('div', null, head(h('div', { class: 'head__actions' }, h('button', { class: 'btn', onclick: () => editCraft() }, 'New craft'))), list);
+  }
+  function editCraft(c) {
+    const isNew = !c; c = c || { name: '', line: '', video_url: '' };
+    const name = h('input', { type: 'text', value: c.name, placeholder: 'Colour' });
+    const line = h('input', { type: 'text', value: c.line, placeholder: 'The grade that sets the mood.' });
+    const clip = mediaField({ label: 'Clip', kind: 'video', folder: 'crafts', value: c.video_url, hint: 'Optional. A short silent loop that shows this craft, up to 50 MB.' });
+    openSheet({
+      title: isNew ? 'New craft' : 'Edit craft',
+      build(body) { body.append(field('Name', name, 'One word works best. It is shown very large.'), field('One short line about it', line), clip); },
+      footer(foot, ctl) {
+        const save = h('button', { class: 'btn btn--red', onclick: async () => {
+          if (!name.value.trim()) { name.focus(); return toast('Give the craft a name.', true); }
+          if (clip.busy) return toast('Wait for the upload to finish.', true);
+          save.disabled = true;
+          try { const row = { ...c, name: name.value.trim(), line: line.value.trim(), video_url: clip.get() }; if (isNew) row.position = S.crafts.length + 1;
+            const saved = await api.save('crafts', row); if (isNew) S.crafts.push(saved); else S.crafts = S.crafts.map((x) => (x.id === saved.id ? saved : x));
+            ctl.clean(); ctl.close(); render(); toast(isNew ? 'Craft added' : 'Craft saved'); } catch (e) { fail(e); save.disabled = false; }
+        } }, 'Save craft');
+        foot.append(isNew ? h('span') : h('button', { class: 'btn btn--danger', onclick: async () => {
+          if (!await confirmBox({ title: 'Delete "' + c.name + '"?', body: 'It disappears from the Services page.', yes: 'Delete craft', danger: true })) return;
+          try { await api.remove('crafts', c.id); S.crafts = S.crafts.filter((x) => x.id !== c.id); ctl.clean(); ctl.close(); render(); toast('Craft deleted'); } catch (e) { fail(e); }
+        } }, 'Delete'), h('div', null, h('button', { class: 'btn', onclick: ctl.tryClose }, 'Cancel'), save));
+      },
+    });
   }
   function editMilestone(m) {
     const isNew = !m; m = m || { year: '', title: '', line: '' };
@@ -560,7 +611,7 @@
 
   // ---------- Page texts ----------
   function viewTexts() {
-    const ORDER = ['Home', 'About', 'About: Countries page', 'Clients', 'Projects', 'Team', 'Contact', 'Search and sharing'];
+    const ORDER = ['Home', 'About', 'About: Countries page', 'About: Services page', 'Clients', 'Projects', 'Team', 'Contact', 'Search and sharing'];
     const groups = [...new Set(S.texts.map((t) => t.group_name))].sort((a, b) => (ORDER.indexOf(a) + 1 || 99) - (ORDER.indexOf(b) + 1 || 99));
     const inputs = {};
     const bar = h('div', { class: 'savebar' }, h('span', null, 'You have unsaved changes'));
