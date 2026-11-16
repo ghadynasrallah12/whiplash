@@ -372,6 +372,52 @@ body.is-dark[data-scene=about] .nav a:hover, body.is-dark[data-scene=about] .nav
 .try.is-out .try__stage { clip-path: inset(0 50% 0 50%); transition-delay: 0s; transition-duration: .55s; }
 .try.is-out .try__copy, .try.is-out .try__foot, .try.is-out .try__word, .try.is-out .try__handle { opacity: 0; transition: opacity .2s; }
 
+/* ---------- [06] Contact ----------
+   Seven dark strips slide in from alternating sides, then the WHIPLASH word (cut into the same
+   seven strips) flies in strip by strip and settles off-register. It drifts with the cursor and
+   glitches now and then (js/site.js). */
+.sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+body[data-scene=contact] .nav { left: var(--ax); right: 6vw; color: #fff; }
+body[data-scene=contact] .nav a:hover, body[data-scene=contact] .nav a[aria-current=page] { color: var(--red); }
+.contact { position: fixed; inset: 0; z-index: 5; color: #f0f0f5; overflow: hidden; }
+.contact.is-solid { background: var(--ink-bg, #0c0c11); }
+.contact__shut i { position: absolute; left: 0; right: 0; top: calc(var(--k) * 100% / 7); height: calc(100% / 7 + 1px); background: var(--ink-bg, #0c0c11);
+  transform: translateX(var(--from)); transition: transform .62s cubic-bezier(.7, 0, .2, 1) calc(var(--k) * 50ms); }
+.contact__shut i:nth-child(odd) { --from: -101%; } .contact__shut i:nth-child(even) { --from: 101%; }
+.contact.is-in .contact__shut i { transform: none; }
+.contact.is-out .contact__shut i { transform: translateX(calc(var(--from) * -1)); transition-delay: calc((6 - var(--k)) * 40ms); }
+.contact.is-solid .contact__shut { visibility: hidden; }
+
+.wm { position: absolute; left: 0; top: 13.9vh; width: 100vw; height: min(23.3vh, calc(93vw / 6.2)); display: block; }
+
+.cta { position: absolute; margin: 0; left: var(--ax); top: 53.6vh; font-weight: 500; font-size: min(8.1vw, 14.4vh); line-height: .99; letter-spacing: -.015em; text-transform: uppercase; }
+.cta em { font-style: normal; color: var(--red); }
+.cta__ln { display: block; overflow: hidden; padding-bottom: .02em; }
+.cta__ln > span { display: block; transform: translateY(105%); transition: transform .9s cubic-bezier(.2, .9, .2, 1) .55s; }
+.cta__ln:nth-child(2) > span { transition-delay: .67s; }
+.contact.is-content .cta__ln > span { transform: none; }
+
+.offices { position: absolute; left: 71.3vw; right: var(--ax); top: 55.6vh; margin: 0; padding: 0; list-style: none; }
+.offices li { position: relative; display: grid; grid-template-columns: 7.8vw 1fr auto; align-items: center; height: 4.73vh; min-height: 34px; opacity: 0; transform: translateY(8px); transition: opacity .5s, transform .6s cubic-bezier(.2, .9, .2, 1); transition-delay: calc(var(--k) * 90ms + .8s); }
+.offices li::before, .offices li:first-child::after { content: ""; position: absolute; left: 0; right: 0; bottom: 0; height: 1.5px; background: #4a4a52; transform: scaleX(0); transform-origin: left; transition: transform .7s cubic-bezier(.7, 0, .2, 1); transition-delay: calc(var(--k) * 90ms + .75s); }
+.offices li:last-child::before { display: none; }
+.offices li:first-child::after { top: 0; bottom: auto; background: #6a6a72; }
+.contact.is-content .offices li { opacity: 1; transform: none; }
+.contact.is-content .offices li::before, .contact.is-content .offices li:first-child::after { transform: none; }
+.offices__c { color: var(--red); font-size: var(--ui); font-weight: 500; letter-spacing: .05em; text-transform: uppercase; }
+.offices__a { font-size: clamp(14px, 1vw, 24px); font-weight: 500; }
+.offices__t { font-size: var(--ui); color: #8a8a92; letter-spacing: .05em; font-variant-numeric: tabular-nums; }
+
+.cfoot { position: absolute; left: var(--ax); right: var(--ax); top: 94.6vh; display: flex; align-items: center; gap: 2.2vw; font-size: var(--ui); font-weight: 500; letter-spacing: .05em; text-transform: uppercase; line-height: 1; opacity: 0; transition: opacity .5s 1.05s; }
+.contact.is-content .cfoot { opacity: 1; }
+.cfoot a, .cfoot button { padding: 6px 0; color: inherit; }
+.cfoot a:hover { color: var(--red); }
+.cfoot__mail { color: var(--red) !important; text-align: left; }
+.cfoot__mail:hover #mail-hint { color: #fff; }
+.cfoot__mail.is-copied #mail-hint { color: #fff; }
+.cfoot__c { margin-left: auto; }
+.contact.is-closing .cta, .contact.is-closing .offices, .contact.is-closing .cfoot, .contact.is-closing .wm { opacity: 0; transition: opacity .2s; }
+
 /* ---------- Cursor ring (trails the pointer; real cursor stays) ---------- */
 .ring { position: fixed; left: 0; top: 0; width: 30px; height: 30px; margin: -15px 0 0 -15px; border: 1.5px solid var(--ink); border-radius: 50%; pointer-events: none; z-index: 9; opacity: 0; transition: opacity .2s, width .2s, height .2s, margin .2s; }
 .ring.is-on { opacity: 1; }
@@ -443,6 +489,17 @@ body.is-dark[data-scene=about] .nav a:hover, body.is-dark[data-scene=about] .nav
   .try__chips { gap: 4px 14px; }
   .try__foot { top: auto; height: 58px; }
   .try__hint { display: none; }
+}
+@media (max-width: 760px) {
+  body[data-scene=contact] .nav { right: 18px; }
+  .contact { overflow-y: auto; }
+  .wm { height: calc((100vw - 24px) / 6.2); top: 120px; }
+  .cta { position: relative; left: 0; top: 0; margin: calc(120px + 26vw) 18px 0; font-size: 14.5vw; }
+  .offices { position: relative; left: 0; right: 0; top: 0; margin: 28px 18px 0; }
+  .offices li { grid-template-columns: 80px 1fr auto; height: 46px; }
+  .cfoot { position: relative; left: 0; right: 0; top: 0; margin: 34px 18px 28px; flex-wrap: wrap; gap: 14px 22px; }
+  .cfoot__mail { flex-basis: 100%; }
+  .cfoot__c { margin-left: 0; }
 }
 @media (hover: none) { .ring { display: none; } }
 @media (prefers-reduced-motion: reduce) { .rec i { animation: none; } .about, .about *, .about *::after { transition-duration: .01ms !important; transition-delay: 0s !important; } }

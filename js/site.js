@@ -34,6 +34,7 @@
     // [04] Projects is its own "desktop" (js/desk.js) laid over the site
     var D = window.WL_DESK;
     if (D) { if (name === 'projects') D.open(true); else if (!D.busy) D.close(true); }
+    if (typeof contactSnap === 'function' && !contactBusy) contactSnap(name === 'contact');
     setState(i);
     LOGO().setMode(name === 'home' ? 'home' : name === 'about' ? 'flood' : 'hidden');
     about.classList.add('no-anim');
@@ -85,6 +86,8 @@
     if (D && from === 'projects') {                            // …and slide back
       locked = true; D.close(false, function () { locked = false; }); snap(i); return;
     }
+    if (to === 'contact') { locked = true; openContact(function () { snap(i); locked = false; }); return; }
+    if (from === 'contact') { locked = true; contactBusy = true; snap(i); closeContact(function () { locked = false; }); return; }
     locked = true;
     body.classList.add('is-cutting');                         // a few black frames…
     setTimeout(function () {
@@ -798,6 +801,7 @@
     rest('texts?select=key,value').then(function (rows) {
       var map = {}; rows.forEach(function (r) { map[r.key] = r.value; });
       document.querySelectorAll('[data-text]').forEach(function (el) { var v = map[el.dataset.text]; if (v) el.textContent = v; });
+      document.querySelectorAll('[data-href]').forEach(function (el) { var v = map[el.dataset.href]; if (v) el.href = v; });
       if (map['seo.title']) document.title = map['seo.title'];
       var d = document.querySelector('meta[name=description]'); if (d && map['seo.description']) d.content = map['seo.description'];
     }).catch(function () { /* keep the words already in the page */ });
@@ -817,6 +821,109 @@
       reel.src = p.video_url; reel.play().catch(function () {});
     }).catch(function () {});
   }
+
+  // ---------- [06] Contact ----------
+  var contact = document.getElementById('contact'), contactBusy = false, contactT = [];
+  // the word is drawn once off-screen, then painted as 7 strips, each with its own sideways offset
+  var WM_REST = [-40, 70, 20, 96, -46, 52, 26];           // how far each strip sits off-register (2200 = the word's width)
+  var WM_PULL = [-60, 45, -35, 70, -50, 38, -42];         // how much each strip follows the cursor
+  var wmCanvas = document.getElementById('wm'), wmCtx = wmCanvas.getContext('2d'), wmOff = document.createElement('canvas');
+  var wmGeo = { W: 0, H: 0, x0: 0, ww: 0, dpr: 1 }, wm = [];
+  for (var wk = 0; wk < 7; wk++) wm.push({ x: (wk % 2 ? 1 : -1) * 3000, target: (wk % 2 ? 1 : -1) * 3000, settled: false });
+  function wmBuild() {
+    var r = wmCanvas.getBoundingClientRect(); if (!r.width || !r.height) return false;
+    var dpr = Math.min(window.devicePixelRatio || 1, 2), W = r.width, H = r.height, mobile = innerWidth <= 760;
+    var ww = mobile ? W - 24 : W * .93, x0 = mobile ? 12 : W * .034;
+    wmCanvas.width = Math.round(W * dpr); wmCanvas.height = Math.round(H * dpr);
+    // the word, stretched to exactly ww × H (cap height)
+    var F = 200, font = '700 ' + F + 'px ' + getComputedStyle(document.body).getPropertyValue('--font');
+    var c = wmOff.getContext('2d'); c.font = font;
+    var m = c.measureText('WHIPLASH'), asc = m.actualBoundingBoxAscent || F * .716, wid = m.width;
+    wmOff.width = Math.round(ww * dpr); wmOff.height = Math.round(H * dpr);
+    c = wmOff.getContext('2d'); c.setTransform(dpr * ww / wid, 0, 0, dpr * H / asc, 0, 0);
+    c.font = font; c.fillStyle = '#f0f0f5'; c.textBaseline = 'alphabetic'; c.fillText('WHIPLASH', 0, asc);
+    var unit = ww / 2200;
+    wm.forEach(function (b, k) { b.rest = WM_REST[k] * unit; b.pull = WM_PULL[k] * unit; if (b.settled) { b.target = b.rest; } });
+    wmGeo = { W: W, H: H, x0: x0, ww: ww, dpr: dpr, unit: unit };
+    return true;
+  }
+  function wmPaint() {
+    var g = wmGeo; if (!g.W) return;
+    wmCtx.setTransform(1, 0, 0, 1, 0, 0); wmCtx.clearRect(0, 0, wmCanvas.width, wmCanvas.height);
+    var bh = g.H / 7;
+    wm.forEach(function (b, k) {
+      var sy = Math.round(k * bh * g.dpr), sh = Math.round(bh * g.dpr) - Math.max(1, Math.round(g.dpr * .8));   // a hairline between strips
+      wmCtx.drawImage(wmOff, 0, sy, wmOff.width, sh, Math.round((g.x0 + b.x) * g.dpr), sy, wmOff.width, sh);
+    });
+  }
+  window.addEventListener('resize', function () { if (!contact.hidden && wmBuild()) wmPaint(); });
+  if (document.fonts && document.fonts.ready) document.fonts.ready.then(function () { if (!contact.hidden && wmBuild()) wmPaint(); });
+  var wmRaf = 0, wmMouse = 0, wmGlitchT = 0;
+  function wmLoop() {
+    wm.forEach(function (b) { b.x += (b.target + (b.settled ? wmMouse * b.pull : 0) - b.x) * (b.fast ? .32 : .085); });
+    wmPaint();
+    wmRaf = contact.hidden ? 0 : requestAnimationFrame(wmLoop);
+  }
+  function wmGlitch() {   // every few seconds one or two strips jump and snap back
+    clearTimeout(wmGlitchT);
+    if (contact.hidden || reduce) return;
+    var picks = [(Math.random() * 7) | 0, Math.random() < .4 ? (Math.random() * 7) | 0 : -1];
+    picks.forEach(function (k) { if (k < 0) return; var b = wm[k], keep = b.target; b.fast = true; b.target = keep + (Math.random() < .5 ? -1 : 1) * (60 + Math.random() * 140) * (wmGeo.unit || 1); setTimeout(function () { b.target = keep; setTimeout(function () { b.fast = false; }, 200); }, 90 + Math.random() * 80); });
+    wmGlitchT = setTimeout(wmGlitch, 2200 + Math.random() * 3000);
+  }
+  contact.addEventListener('pointermove', function (e) { if (e.pointerType === 'mouse') wmMouse = e.clientX / innerWidth - .5; });
+  function wmIntro(instant) {
+    wmBuild();
+    wm.forEach(function (b, k) {
+      b.settled = false; b.fast = false;
+      if (instant || reduce) { b.x = b.target = b.rest; b.settled = true; return; }
+      b.x = b.target = (k % 2 ? 1 : -1) * (wmGeo.W || innerWidth) * (1.05 + k * .05);
+      contactT.push(setTimeout(function () { b.target = b.rest; }, 380 + k * 70));      // strip by strip, from alternating sides
+      contactT.push(setTimeout(function () { b.settled = true; }, 1500 + k * 70));
+    });
+    wmPaint();
+    if (!wmRaf) wmRaf = requestAnimationFrame(wmLoop);
+    clearTimeout(wmGlitchT); wmGlitchT = setTimeout(wmGlitch, 2600);
+  }
+  function contactClear() { contactT.forEach(clearTimeout); contactT = []; }
+  function contactSnap(on) {
+    if (on && !contact.hidden && contact.classList.contains('is-content')) return;   // already there (maybe still building): leave it be
+    contactClear();
+    contact.classList.remove('is-out', 'is-closing');
+    if (!on) { contact.hidden = true; contact.classList.remove('is-in', 'is-solid', 'is-content'); clearTimeout(wmGlitchT); return; }
+    contact.hidden = false; contact.classList.add('is-in', 'is-solid', 'is-content');
+    wmIntro(true); paintTimes();
+  }
+  function openContact(done) {
+    contactClear(); contactBusy = true;
+    contact.hidden = false; contact.classList.remove('is-in', 'is-solid', 'is-content', 'is-out', 'is-closing'); void contact.offsetWidth;
+    contact.classList.add('is-in'); tick(1, .55); paintTimes();          // the dark strips slide in…
+    contactT.push(setTimeout(function () { contact.classList.add('is-solid', 'is-content'); wmIntro(false); }, 620));   // …then the page builds
+    contactT.push(setTimeout(function () { contactBusy = false; if (done) done(); }, 700));
+  }
+  function closeContact(done) {
+    contactClear(); clearTimeout(wmGlitchT);
+    contact.classList.add('is-closing');
+    contactT.push(setTimeout(function () { contact.classList.remove('is-solid', 'is-content'); contact.classList.add('is-out'); tick(-1, .5); }, 180));   // strips slide away
+    contactT.push(setTimeout(function () { contact.hidden = true; contact.classList.remove('is-in', 'is-out', 'is-closing'); contactBusy = false; if (done) done(); }, 900));
+  }
+  // local time in each office
+  var tzFmt = {};
+  function paintTimes() {
+    [].forEach.call(document.querySelectorAll('[data-tz]'), function (n) {
+      try { tzFmt[n.dataset.tz] = tzFmt[n.dataset.tz] || new Intl.DateTimeFormat('en-GB', { hour: '2-digit', minute: '2-digit', hour12: false, timeZone: n.dataset.tz }); n.textContent = tzFmt[n.dataset.tz].format(new Date()); } catch (e) { n.textContent = ''; }
+    });
+  }
+  setInterval(function () { if (!contact.hidden) paintTimes(); }, 15000);
+  document.getElementById('year').textContent = new Date().getFullYear();
+  // email: click to copy
+  var mail = document.getElementById('mail'), mailHint = document.getElementById('mail-hint'), mailT;
+  mail.addEventListener('click', function () {
+    var addr = document.getElementById('mail-addr').textContent.trim();
+    var ok = function () { mail.classList.add('is-copied'); mailHint.textContent = '— Copied'; tick(1, .5); clearTimeout(mailT); mailT = setTimeout(function () { mail.classList.remove('is-copied'); mailHint.textContent = '— Click to copy'; }, 1800); };
+    if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(addr).then(ok, function () { location.href = 'mailto:' + addr; });
+    else location.href = 'mailto:' + addr;
+  });
 
   // shared with js/desk.js
   window.WL = { cutTo: function (name) { cutTo(SCENES.indexOf(name)); }, tick: function (d, v) { tick(d, v); }, rest: rest, live: !!(CFG.supabaseUrl && CFG.supabaseAnonKey), reduce: reduce, unlock: function () { unlockSound(); } };
