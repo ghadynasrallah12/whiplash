@@ -214,6 +214,12 @@
     chCap.textContent = '[' + two(chapter + 1) + '] ' + CHAPTERS[chapter].title + (CHAPTERS[chapter].caption ? ' — ' + CHAPTERS[chapter].caption : '');
     coverPlate(); revealPlate(250);                     // replay it straight away with the new one
   });
+  // stop a reveal mid-way: photo fully open, caption back to normal, no more sounds
+  function stopLock() {
+    clearLock(); revealId++;
+    for (var n = 0; n < CELLS; n++) { var c = cellAt(n); c.className = ''; c.firstChild.textContent = ''; }
+    var ch = CHAPTERS[chapter]; if (ch) chCap.textContent = '[' + two(chapter + 1) + '] ' + ch.title + (ch.caption ? ' — ' + ch.caption : '');
+  }
   // everything red (used while the picture underneath is swapped)
   function coverPlate() {
     clearLock(); revealId++;
@@ -269,8 +275,9 @@
   }
   // sounds of the lock: dial clicks and the bolt (silent when Sound is off)
   var lastLockClick = 0;
+  function lockAudible() { return SCENES[current] === 'about' && !detailOpen && !about.hidden; }
   function lockClick(vol, pitch) {
-    if (reduce || !ac || !soundOn || ac.state !== 'running') return;
+    if (reduce || !ac || !soundOn || ac.state !== 'running' || !lockAudible()) return;
     var now = performance.now(); if (now - lastLockClick < 22) return; lastLockClick = now;
     try {
       var t = ac.currentTime, len = Math.floor(ac.sampleRate * .012), buf = ac.createBuffer(1, len, ac.sampleRate), d = buf.getChannelData(0);
@@ -284,7 +291,7 @@
     } catch (e) { /* no audio */ }
   }
   function lockClunk() {
-    if (reduce || !ac || !soundOn || ac.state !== 'running') return;
+    if (reduce || !ac || !soundOn || ac.state !== 'running' || !lockAudible()) return;
     try {
       var t = ac.currentTime + .01;
       var o = ac.createOscillator(), g = ac.createGain();
@@ -694,6 +701,7 @@
   function openDetail(i) {
     if (locked || !pageOf(i)) return;
     if (detailOpen) return switchDetail(i);
+    stopLock();
     detailOpen = true; histTimers.forEach(clearTimeout); histTimers = [];
     setChapter(i, true);
     var stays = pageOf(i) === 'timeline';            // History keeps its word as the page title; on the other pages every word leaves
