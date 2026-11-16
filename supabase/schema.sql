@@ -181,7 +181,7 @@ select v.year, v.title, v.line, v.position from (values
   ('20XX', 'Colour & sound in-house', 'Every craft under one roof.',          3),
   ('20XX', 'Dubai',                   'A second home for the studio.',        4),
   ('20XX', 'KSA',                     'Cutting for the Kingdom.',             5),
-  ('20XX', 'Now',                     'Still obsessed with the frame.',       6)
+  ('2026', 'Now',                     'Still obsessed with the frame.',       6)
 ) as v(year, title, line, position)
 where not exists (select 1 from public.milestones);
 

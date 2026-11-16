@@ -83,7 +83,7 @@
         categories: cats,
         projects: P.map((p, i) => ({ id: 'p-' + i, position: i + 1, name: p[0], type: p[1], category_id: cat(p[2]), description: 'Driven by sound design as much as image, we shape a complete sensory experience; where audio and visuals work seamlessly and land deeply, memorably and with impact.', thumb_url: '../assets/' + p[3] + '.jpg', video_url: i === 0 ? '../assets/hero.mp4' : '', film_link: 'https://vimeo.com/', logo_url: '', award_url: '', credits: cr, is_hero: i === 0, published: i !== 9 })),
         chapters: [['History', 'Since 20XX', 'work-7'], ['Countries', 'Beirut / Dubai / KSA', 'work-5'], ['Services', 'Edit to delivery', 'work-1']].map((c, i) => ({ id: 'ch-' + i, position: i + 1, title: c[0], caption: c[1], image_url: '../assets/' + c[2] + '.jpg' })),
-        milestones: [['Founded in Beirut', 'Two editors, one room, one deadline.'], ['First global brand', 'The cut that put us on the map.'], ['Colour & sound in-house', 'Every craft under one roof.'], ['Dubai', 'A second home for the studio.'], ['KSA', 'Cutting for the Kingdom.'], ['Now', 'Still obsessed with the frame.']].map((m, i) => ({ id: 'ms-' + i, position: i + 1, year: '20XX', title: m[0], line: m[1] })),
+        milestones: [['Founded in Beirut', 'Two editors, one room, one deadline.'], ['First global brand', 'The cut that put us on the map.'], ['Colour & sound in-house', 'Every craft under one roof.'], ['Dubai', 'A second home for the studio.'], ['KSA', 'Cutting for the Kingdom.'], ['Now', 'Still obsessed with the frame.']].map((m, i, all) => ({ id: 'ms-' + i, position: i + 1, year: i === all.length - 1 ? '2026' : '20XX', title: m[0], line: m[1] })),
         clients: ['Sample Client', 'Another Brand', 'Agency Name'].map((name, i) => ({ id: 'c-' + i, position: i + 1, name, logo_url: '', website: '' })),
         texts: [
           { key: 'home.tagline', group_name: 'Home', label: 'Line under the film, left', kind: 'short', position: 1, value: 'Post-production · Beirut / Dubai / KSA' },
@@ -492,7 +492,7 @@
   }
   // the dates on the History page
   function timelineBlock() {
-    const head = (extra) => h('div', { class: 'head', style: 'margin-top:56px' }, h('div', null, h('h2', { style: 'font:700 30px/1 var(--display);letter-spacing:-.025em' }, 'History timeline'), h('p', null, 'The dates shown when a visitor opens History. They appear one after the other, left to right. The last one is drawn as "still running".')), extra);
+    const head = (extra) => h('div', { class: 'head', style: 'margin-top:56px' }, h('div', null, h('h2', { style: 'font:700 30px/1 var(--display);letter-spacing:-.025em' }, 'History timeline'), h('p', null, 'The dates shown when a visitor opens History. They appear one after the other, left to right. The last one gets the darkest block.')), extra);
     if (S.milestones === null) return h('div', null, head(), h('div', { class: 'list' }, h('div', { class: 'empty' }, h('h3', null, 'One setup step is missing'), 'Run supabase/schema.sql again in the Supabase SQL Editor, then reload this page.')));
     const all = S.milestones.slice().sort(byPos);
     const list = h('div', { class: 'list' });

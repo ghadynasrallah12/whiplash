@@ -232,7 +232,7 @@
     { year: '20XX', title: 'Colour & sound in-house', line: 'Every craft under one roof.' },
     { year: '20XX', title: 'Dubai',                   line: 'A second home for the studio.' },
     { year: '20XX', title: 'KSA',                     line: 'Cutting for the Kingdom.' },
-    { year: '20XX', title: 'Now',                     line: 'Still obsessed with the frame.' },
+    { year: '2026', title: 'Now',                     line: 'Still obsessed with the frame.' },
   ];
   var hist = document.getElementById('hist'), tlItems = document.getElementById('tl-items'), tlHead = document.getElementById('tl-head');
   var detailOpen = false, histTimers = [];
@@ -247,8 +247,8 @@
       var li = el('li'), n = MILESTONES.length, last = i === n - 1;
       var year = el('div', 'tl__year'); year.appendChild(el('span', '', m.year));
       var bar = el('div', 'tl__bar');
-      // clips run from light to dark; the last one is still "open" (outline only)
-      if (!last) bar.style.setProperty('--c', 'hsl(240 2% ' + Math.round(73 - (n > 2 ? i / (n - 2) : 0) * 43) + '%)');
+      // clips run from light grey to dark; the last one is anthracite
+      bar.style.setProperty('--c', last ? '#232326' : 'hsl(240 2% ' + Math.round(73 - (n > 2 ? i / (n - 2) : 0) * 39) + '%)');
       li.appendChild(year); li.appendChild(bar); li.appendChild(el('h3', 'tl__name', m.title)); li.appendChild(el('p', 'tl__line', m.line));
       tlItems.appendChild(li);
     });

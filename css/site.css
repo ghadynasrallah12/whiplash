@@ -170,7 +170,7 @@ body:not([data-scene=home]):not(.is-opening) .logo { opacity: 0; }
 .tl li.is-on .tl__name { opacity: 1; transform: none; transition-delay: .12s; }
 .tl li.is-on .tl__line { opacity: .62; transform: none; transition-delay: .22s; }
 /* the playhead */
-.tl__head { position: absolute; top: -2.3vh; left: 0; width: 2px; margin-left: -.5vw; background: #fff; box-shadow: 1px 0 0 #0a0a0c; opacity: 0; transition: left .34s cubic-bezier(.6, 0, .2, 1), opacity .3s; }
+.tl__head { position: absolute; top: -2.3vh; left: 0; width: 2px; margin-left: 0;   /* sits exactly on the left edge of the clip it has reached */ background: #fff; box-shadow: 1px 0 0 #0a0a0c; opacity: 0; transition: left .34s cubic-bezier(.6, 0, .2, 1), opacity .3s; }
 .tl__head::before { content: ""; position: absolute; left: -7px; top: -2px; width: 16px; height: 12px; background: #fff; clip-path: polygon(0 0, 100% 0, 100% 45%, 50% 100%, 0 45%); }
 .tl__head.is-on { opacity: 1; }
 
