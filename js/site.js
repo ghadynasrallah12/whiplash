@@ -1,6 +1,6 @@
 // =========================================================
 // WHIPLASH — site
-//   scenes   : six of them; scroll / swipe / arrows / nav "cut" between them
+//   scenes   : six of them; the nav (click) and the arrow keys "cut" between them — scrolling does nothing
 //   content  : read from the dashboard (Supabase); the words in index.html are the fallback
 //   reel     : sound toggle + running timecode
 // =========================================================
@@ -88,20 +88,7 @@
 
   // one "step" forward/back = the next / previous page, on every page (chapters on About are picked by hover or click)
   function step(dir) { if (!locked) cutTo(current + dir); }
-  var wheelAcc = 0, wheelT;
-  window.addEventListener('wheel', function (e) {
-    wheelAcc += Math.abs(e.deltaY) > Math.abs(e.deltaX) ? e.deltaY : e.deltaX;
-    clearTimeout(wheelT); wheelT = setTimeout(function () { wheelAcc = 0; }, 160);
-    if (Math.abs(wheelAcc) > 30) { step(wheelAcc > 0 ? 1 : -1); wheelAcc = 0; }
-  }, { passive: true });
-  var touch = null;
-  window.addEventListener('touchstart', function (e) { touch = e.touches[0] ? { x: e.touches[0].clientX, y: e.touches[0].clientY } : null; }, { passive: true });
-  window.addEventListener('touchend', function (e) {
-    if (!touch || !e.changedTouches[0]) return;
-    var dx = e.changedTouches[0].clientX - touch.x, dy = e.changedTouches[0].clientY - touch.y, d = Math.abs(dy) > Math.abs(dx) ? dy : dx;
-    if (Math.abs(d) > 50) step(d < 0 ? 1 : -1);
-    touch = null;
-  }, { passive: true });
+  // Scrolling and swiping do NOT change pages (by request): pages change on click, or with the arrow keys.
   window.addEventListener('keydown', function (e) {
     if (['ArrowRight', 'ArrowDown', 'PageDown'].indexOf(e.key) > -1) step(1);
     if (['ArrowLeft', 'ArrowUp', 'PageUp'].indexOf(e.key) > -1) step(-1);
