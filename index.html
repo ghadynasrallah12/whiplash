@@ -70,12 +70,36 @@
         <i class="tl__head" id="tl-head"></i>
         <ol class="tl__items" id="tl-items"></ol>
       </div>
-      <div class="hist__foot">
-        <i class="tl__rule"></i>
-        <button class="hist__back" id="hist-back" type="button">← [02] About</button>
-        <div class="hist__chapters" id="hist-chapters"></div>
-        <button class="hist__next" id="hist-next" type="button"></button>
+    </div>
+
+    <!-- Countries = the map: the land grows out of Beirut, then the routes draw one by one. -->
+    <div class="map" id="map" hidden>
+      <h2 class="map__word" id="map-word" aria-live="polite"><span class="map__ln"><span></span></span><span class="map__ln"><span></span></span></h2>
+      <div class="map__note">
+        <svg class="map__arrow" viewBox="0 0 290 157" aria-hidden="true"><path d="M0 66h212V0l78 78-78 79V91H0z"/></svg>
+        <p class="map__label">[02] About — <span data-text="countries.since">Since 20XX</span></p>
+        <p class="map__line" data-text="countries.line">Born in Beirut. Cutting for Dubai and KSA. Every frame intentional, every cut with weight.</p>
       </div>
+      <svg class="map__svg" id="map-svg" viewBox="0 0 1140 1110" role="img" aria-label="Map: Beirut, with routes to Jeddah, Riyadh and Dubai">
+        <defs><g id="wl-mark"><path d="M0 0H21.2V82A21.2 21.2 0 0 1 0 60.8Z"/><path d="M42.7 0H63.9V60.6A21.4 21.4 0 0 0 85.3 82H106.6V100H39.3A18 18 0 0 1 21.3 82A21.4 21.4 0 0 0 42.7 60.6Z"/><path d="M85.4 0H106.6V60.6H93.4A8 8 0 0 1 85.4 52.6Z"/></g></defs>
+        <polygon class="map__land" points="170,20 245,11 365,23 448,115 640,295 670,388 735,478 763,548 791,502 795,578 910,569 922,512 985,490 988,548 1075,606 1127,655 1046,817 940,880 820,965 528,1090 463,1096 430,930 300,715 250,582 188,498 142,406 119,340 26,321 14,263 102,248 118,178 132,134 144,108 150,70"/>
+        <!-- drawn in this order: Jeddah, Riyadh, Dubai -->
+        <path class="map__route" data-to="jeddah" d="M150 140 Q290 300 297 700"/>
+        <path class="map__route" data-to="riyadh" d="M150 140 Q430 180 597 556"/>
+        <path class="map__route" data-to="dubai"  d="M150 140 Q570 180 945 533"/>
+        <g class="city" data-city="beirut" data-name="Beirut" transform="translate(150 140)" tabindex="0"><use href="#wl-mark" class="city__mark" transform="translate(-11.7 -11) scale(.22)"/><text x="20" y="10">[01] Beirut</text></g>
+        <g class="city" data-city="dubai"  data-name="Dubai"  transform="translate(945 533)" tabindex="0"><use href="#wl-mark" class="city__mark" transform="translate(-11.7 -11) scale(.22)"/><text x="20" y="10">[02] Dubai</text></g>
+        <g class="city" data-city="riyadh" data-name="Riyadh" transform="translate(597 556)" tabindex="0"><use href="#wl-mark" class="city__mark" transform="translate(-11.7 -11) scale(.22)"/><text x="20" y="10">[03] Riyadh</text></g>
+        <g class="city" data-city="jeddah" data-name="Jeddah" transform="translate(297 700)" tabindex="0"><use href="#wl-mark" class="city__mark" transform="translate(-11.7 -11) scale(.22)"/><text x="20" y="10">[04] Jeddah</text></g>
+      </svg>
+    </div>
+
+    <!-- shared footer of the chapter pages: previous · all chapters · next -->
+    <div class="dfoot" id="dfoot">
+      <i class="tl__rule"></i>
+      <button class="hist__back" id="hist-back" type="button"></button>
+      <div class="hist__chapters" id="hist-chapters"></div>
+      <button class="hist__next" id="hist-next" type="button"></button>
     </div>
   </section>
 

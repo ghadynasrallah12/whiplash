@@ -174,15 +174,55 @@ body:not([data-scene=home]):not(.is-opening) .logo { opacity: 0; }
 .tl__head::before { content: ""; position: absolute; left: -7px; top: -2px; width: 16px; height: 12px; background: #fff; clip-path: polygon(0 0, 100% 0, 100% 45%, 50% 100%, 0 45%); }
 .tl__head.is-on { opacity: 1; }
 
-.hist__foot { position: absolute; left: var(--ax); right: var(--ax); top: 94.25vh; bottom: 0; display: flex; align-items: center; justify-content: space-between; opacity: 0; transition: opacity .5s .5s; }
-.hist.is-in .hist__foot { opacity: 1; }
-.hist__foot button { padding: 6px 0; }
-.hist__foot button:hover { color: #fff; }
+/* shared footer of the chapter pages */
+.dfoot { position: absolute; left: var(--ax); right: var(--ax); top: 94.25vh; bottom: 0; display: flex; align-items: center; justify-content: space-between; color: #0a0a0c; opacity: 0; visibility: hidden; transition: opacity .5s .4s, visibility 0s .9s; }
+.dfoot.is-in { opacity: 1; visibility: visible; transition: opacity .5s .4s; }
+.dfoot.is-in .tl__rule { transform: none; }
+.about[data-detail=map] .dfoot .tl__rule { height: 1.5px; background: #0a0a0c; box-shadow: none; }
+.dfoot button { padding: 6px 0; }
+.dfoot button:hover { color: #fff; }
 .hist__chapters { display: flex; gap: 2.2vw; }
 .hist__chapters button { opacity: .38; transition: opacity .2s; }
 .hist__chapters button:hover { opacity: 1; }
-.hist { transition: opacity .35s; }
-.hist.is-out { opacity: 0; }
+.hist__chapters button[aria-current=true] { opacity: 1; color: #fff; }
+.hist, .map { transition: opacity .35s; }
+.hist.is-out, .map.is-out { opacity: 0; }
+
+/* ---------- Countries: the map ----------
+   The city name fills the left. On the right the land grows out of Beirut, then the routes
+   draw one at a time (Jeddah, Riyadh, Dubai), each ending in a Whiplash mark. */
+.map { position: absolute; inset: 0; color: #0a0a0c; }
+.map__word { position: absolute; left: 6.7vw; top: 14.5vh; margin: 0; font-weight: 500; font-size: min(15.75vw, 27vh); line-height: .93; letter-spacing: -.02em; text-transform: uppercase; }
+.map__ln { display: block; overflow: hidden; padding-bottom: .04em; }
+.map__ln > span { display: block; transform: translateY(105%); transition: transform .9s cubic-bezier(.2, .9, .2, 1); }
+.map__ln:nth-child(2) > span { transition-delay: .12s; }
+.map.is-in .map__ln > span { transform: none; }
+.map__note { position: absolute; left: var(--ax); top: 74.3vh; width: 34vw; }
+.map__arrow { position: absolute; left: 1.8vw; top: 0; width: 12.2vw; height: auto; fill: #f0f0f5; transform: translateX(-140%); opacity: 0; transition: transform .9s cubic-bezier(.2, .9, .2, 1) .5s, opacity .3s .5s; }
+.map.is-in .map__arrow { transform: none; opacity: 1; animation: arrowNudge 2.6s ease-in-out 2.2s infinite; }
+@keyframes arrowNudge { 0%, 70%, 100% { transform: translateX(0); } 82% { transform: translateX(.7vw); } }
+.map__label { position: relative; margin: calc(2.77vw - 1.6em) 0 0; color: #fff; font-size: var(--ui); font-weight: 500; letter-spacing: .05em; text-transform: uppercase; line-height: 1; white-space: nowrap; }
+.map__line { position: relative; margin: 1.9vw 0 0; font-size: clamp(14px, 1.2vw, 28px); line-height: 1.25; font-weight: 500; max-width: 29vw; }
+.map__label, .map__line { opacity: 0; transform: translateY(10px); transition: opacity .5s .8s, transform .6s cubic-bezier(.2, .9, .2, 1) .8s; }
+.map.is-in .map__label, .map.is-in .map__line { opacity: 1; transform: none; }
+
+.map__svg { position: absolute; left: 47.5vw; top: 6.9vh; width: 47.9vw; height: 82.8vh; overflow: visible; }
+.map__land { fill: #f0f0f5; transform-box: view-box; transform-origin: 150px 140px; transform: scale(0); transition: transform 1s cubic-bezier(.3, 1.15, .4, 1) .15s; }
+.map.is-in .map__land { transform: none; }
+.map__route { fill: none; stroke: var(--page-red); stroke-width: 3.2; stroke-linecap: round; transition: stroke-dashoffset .85s cubic-bezier(.6, 0, .25, 1), opacity .25s, stroke-width .25s; }
+.city { cursor: pointer; outline: none; }
+.city__mark { fill: var(--page-red); }
+.city text { font-size: 26px; font-weight: 700; text-transform: uppercase; fill: #0a0a0c; letter-spacing: .01em; }
+.city > * { opacity: 0; transition: opacity .3s; }
+.city .city__mark { transform-box: fill-box; }
+.city.is-on > * { opacity: 1; }
+.city.is-on .city__mark { animation: markPop .5s cubic-bezier(.3, 1.6, .5, 1) both; }
+@keyframes markPop { from { opacity: 0; scale: .2; } to { opacity: 1; scale: 1; } }
+.city.is-picked text { fill: var(--page-red); }
+.map__svg.has-pick .map__route { opacity: .28; }
+.map__svg.has-pick .map__route.is-picked { opacity: 1; stroke-width: 4.6; }
+.city:focus-visible text { text-decoration: underline; }
+
 
 /* ---------- Cursor ring (trails the pointer; real cursor stays) ---------- */
 .ring { position: fixed; left: 0; top: 0; width: 30px; height: 30px; margin: -15px 0 0 -15px; border: 1.5px solid var(--ink); border-radius: 50%; pointer-events: none; z-index: 9; opacity: 0; transition: opacity .2s, width .2s, height .2s, margin .2s; }
@@ -226,7 +266,16 @@ body:not([data-scene=home]):not(.is-opening) .logo { opacity: 0; }
   .tl__name { margin-top: 10px; font-size: 15px; }
   .tl__line { margin-top: 4px; font-size: 12.5px; }
   .tl__head { display: none; }
-  .hist__foot { position: sticky; top: auto; left: 0; right: 0; bottom: 0; height: 58px; background: var(--page-red); }
+  .dfoot { left: 18px; right: 18px; top: auto; bottom: 0; height: 58px; background: var(--page-red); }
+  .hist { padding-bottom: 70px; }
+  .map { overflow-y: auto; padding: 118px 18px 76px; }
+  .map__word { position: static; font-size: 25vw; }
+  .map__svg { position: static; display: block; width: 100%; height: auto; margin-top: 10px; }
+  .map__note { position: relative; left: 0; top: 0; width: auto; margin-top: 18px; }
+  .map__arrow { left: 8px; width: 34vw; }
+  .map__label { margin-top: calc(34vw * .42 - 1.6em); }
+  .map__line { max-width: none; margin-top: 5.5vw; font-size: 16px; }
+  .city text { font-size: 40px; }
   .hist__chapters { display: none; }
 }
 @media (hover: none) { .ring { display: none; } }

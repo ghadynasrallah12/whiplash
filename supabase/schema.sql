@@ -193,6 +193,8 @@ insert into public.texts (key, group_name, label, kind, value, position) values
   ('about.lead3',  'About',   'Third paragraph',     'long',  'We combine strong creative direction with disciplined execution.', 3),
   ('about.small1', 'About',   'Small text, left',    'long',  'Driven by sound design as much as image, we shape a complete sensory experience; where audio and visuals work seamlessly and land deeply, memorably and with impact.', 4),
   ('about.small2', 'About',   'Small text, right',   'long',  'From offline to online edit, VFX, grading, and full creative direction, we shape every stage of the process; designing rhythm, flow, visual language, and sound to create films that don''t just tell stories, but stay with people.', 5),
+  ('countries.since',   'About: Countries page', 'Small label (after "[02] About —")', 'short', 'Since 20XX', 1),
+  ('countries.line',    'About: Countries page', 'Sentence under the city name',       'long',  'Born in Beirut. Cutting for Dubai and KSA. Every frame intentional, every cut with weight.', 2),
   ('contact.email',     'Contact', 'Email',          'short', '', 1),
   ('contact.phone',     'Contact', 'Phone',          'short', '', 2),
   ('contact.address',   'Contact', 'Address',        'long',  '', 3),

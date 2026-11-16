@@ -91,6 +91,8 @@
           { key: 'about.lead1', group_name: 'About', label: 'Opening line', kind: 'long', position: 1, value: "We come from music, not film. That's why we care so much about timing. If it doesn't feel right, we don't move on." },
           { key: 'about.lead2', group_name: 'About', label: 'Second paragraph', kind: 'long', position: 2, value: 'Whiplash is a post-production studio that believes in the power of precision-driven storytelling where every frame is intentional, every cut has weight, and every detail exists.' },
           { key: 'about.lead3', group_name: 'About', label: 'Third paragraph', kind: 'long', position: 3, value: 'We combine strong creative direction with disciplined execution.' },
+          { key: 'countries.since', group_name: 'About: Countries page', label: 'Small label (after "[02] About —")', kind: 'short', position: 1, value: 'Since 20XX' },
+          { key: 'countries.line', group_name: 'About: Countries page', label: 'Sentence under the city name', kind: 'long', position: 2, value: 'Born in Beirut. Cutting for Dubai and KSA. Every frame intentional, every cut with weight.' },
           { key: 'contact.email', group_name: 'Contact', label: 'Email', kind: 'short', position: 1, value: '' },
           { key: 'contact.phone', group_name: 'Contact', label: 'Phone', kind: 'short', position: 2, value: '' },
           { key: 'contact.address', group_name: 'Contact', label: 'Address', kind: 'long', position: 3, value: '' },
@@ -558,7 +560,7 @@
 
   // ---------- Page texts ----------
   function viewTexts() {
-    const ORDER = ['Home', 'About', 'Clients', 'Projects', 'Team', 'Contact', 'Search and sharing'];
+    const ORDER = ['Home', 'About', 'About: Countries page', 'Clients', 'Projects', 'Team', 'Contact', 'Search and sharing'];
     const groups = [...new Set(S.texts.map((t) => t.group_name))].sort((a, b) => (ORDER.indexOf(a) + 1 || 99) - (ORDER.indexOf(b) + 1 || 99));
     const inputs = {};
     const bar = h('div', { class: 'savebar' }, h('span', null, 'You have unsaved changes'));

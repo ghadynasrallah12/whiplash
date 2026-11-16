@@ -194,7 +194,7 @@
       b.addEventListener('pointerenter', function (e) { if (e.pointerType !== 'mouse') return; b.classList.add('is-hover'); setChapter(i); chapterFx(i); });
       b.addEventListener('pointerleave', function () { b.classList.remove('is-hover'); });
       b.addEventListener('click', function (e) {
-        if (i === timelineChapter()) return openDetail(i);
+        if (pageOf(i)) return openDetail(i);
         setChapter(i); if (e.detail && !b.classList.contains('is-hover')) chapterFx(i);
       });
       b.addEventListener('focus', function () { if (!detailOpen) setChapter(i); });
@@ -237,7 +237,6 @@
   var hist = document.getElementById('hist'), tlItems = document.getElementById('tl-items'), tlHead = document.getElementById('tl-head');
   var detailOpen = false, histTimers = [];
   function later(fn, ms) { histTimers.push(setTimeout(fn, ms)); }
-  function timelineChapter() { for (var k = 0; k < CHAPTERS.length; k++) if (CHAPTERS[k].page === 'timeline') return k; return 0; }
   function el(tag, cls, text) { var e = document.createElement(tag); if (cls) e.className = cls; if (text != null) e.textContent = text; return e; }
 
   function renderTimeline() {
@@ -255,38 +254,108 @@
   }
   renderTimeline();
 
-  function fillDetail(i) {
-    document.getElementById('hist-n').textContent = '[' + two(i + 1) + ']';
-    document.getElementById('hist-word').textContent = CHAPTERS[i].title;
-    document.getElementById('hist-crumb').textContent = '[' + two(i + 1) + '] ' + CHAPTERS[i].title;
-    var box = document.getElementById('hist-chapters'); box.textContent = '';
+  // ---------- Countries map ----------
+  var mapEl = document.getElementById('map'), mapSvg = document.getElementById('map-svg'), mapWord = document.getElementById('map-word');
+  var routes = [].slice.call(mapSvg.querySelectorAll('.map__route')), cities = [].slice.call(mapSvg.querySelectorAll('.city'));
+  var HOME_CITY = 'Beirut', mapReady = false;
+  routes.forEach(function (r) { var len = r.getTotalLength(); r.dataset.len = len; r.style.strokeDasharray = len; r.style.strokeDashoffset = len; });
+  function cityEl(key) { return mapSvg.querySelector('.city[data-city="' + key + '"]'); }
+  // the big word: a city name on two lines (BEI / RUT)
+  function setMapWord(name, fx) {
+    var cut = Math.ceil(name.length / 2), parts = [name.slice(0, cut), name.slice(cut)];
+    [].forEach.call(mapWord.querySelectorAll('.map__ln > span'), function (sp, k) { if (fx) scramble(sp, parts[k].toUpperCase()); else { clearInterval(scTimers.get(sp)); sp.textContent = parts[k]; } });
+  }
+  function pickCity(g) {
+    if (!mapReady) return;
+    cities.forEach(function (c) { c.classList.toggle('is-picked', c === g); });
+    routes.forEach(function (r) { r.classList.toggle('is-picked', !!g && r.dataset.to === g.dataset.city); });
+    mapSvg.classList.toggle('has-pick', !!g && g.dataset.city !== 'beirut');
+    setMapWord(g ? g.dataset.name : HOME_CITY, true); tick(1, .5);
+  }
+  cities.forEach(function (g) {
+    g.addEventListener('pointerenter', function (e) { if (e.pointerType === 'mouse') pickCity(g); });
+    g.addEventListener('pointerleave', function (e) { if (e.pointerType === 'mouse') pickCity(null); });
+    g.addEventListener('click', function () { pickCity(g); });
+    g.addEventListener('focus', function () { pickCity(g); });
+  });
+  function resetMap() {
+    mapReady = false; mapSvg.classList.remove('has-pick');
+    routes.forEach(function (r) { r.style.transition = 'none'; r.style.strokeDashoffset = r.dataset.len; r.classList.remove('is-picked'); void r.getBoundingClientRect(); r.style.transition = ''; });
+    cities.forEach(function (c) { c.classList.remove('is-on', 'is-picked'); });
+    setMapWord(HOME_CITY, false);
+  }
+  // Beirut first, then one route at a time; each city's mark lands when its line arrives
+  function playMap() {
+    if (reduce) { routes.forEach(function (r) { r.style.strokeDashoffset = 0; }); cities.forEach(function (c) { c.classList.add('is-on'); }); mapReady = true; return; }
+    later(function () { cityEl('beirut').classList.add('is-on'); tick(1, .5); }, 1050);
+    var t = 1450;
+    routes.forEach(function (r) {
+      later(function () { r.style.strokeDashoffset = 0; }, t);
+      later(function () { cityEl(r.dataset.to).classList.add('is-on'); tick(1, .45); }, t + 780);
+      t += 950;
+    });
+    later(function () { mapReady = true; }, t);
+  }
+  resetMap();
+
+  // ---------- chapter pages: shared open / switch / close ----------
+  var PAGES = { timeline: hist, map: mapEl }, det = null, dfoot = document.getElementById('dfoot');
+  function pageOf(i) {
+    var c = CHAPTERS[i]; if (!c) return '';
+    return c.page || ({ history: 'timeline', countries: 'map' })[String(c.title).toLowerCase()] || '';
+  }
+  function fillFoot(i) {
+    var back = document.getElementById('hist-back'), next = document.getElementById('hist-next'), box = document.getElementById('hist-chapters');
+    back.textContent = i > 0 ? '← ' + CHAPTERS[i - 1].title : '← [02] About';
+    back.onclick = function () { closeDetail(i > 0 ? i - 1 : null); };
+    box.textContent = '';
     CHAPTERS.forEach(function (c, k) {
-      if (k === i) return;
       var b = el('button', '', '[' + two(k + 1) + '] ' + c.title); b.type = 'button';
-      b.addEventListener('click', function () { closeDetail(k); });
+      if (k === i) b.setAttribute('aria-current', 'true'); else b.addEventListener('click', function () { closeDetail(k); });
       box.appendChild(b);
     });
-    var nx = (i + 1) % CHAPTERS.length, next = document.getElementById('hist-next');
+    var nx = (i + 1) % CHAPTERS.length;
     next.hidden = CHAPTERS.length < 2; next.textContent = CHAPTERS[nx].title + ' →';
     next.onclick = function () { closeDetail(nx); };
   }
-  document.getElementById('hist-back').addEventListener('click', function () { closeDetail(); });
-
+  function hidePages() {
+    [hist, mapEl].forEach(function (p) { p.hidden = true; p.classList.remove('is-in', 'is-out'); });
+    tlHead.classList.remove('is-on');
+    [].forEach.call(tlItems.children, function (li) { li.classList.remove('is-on'); });
+    resetMap();
+  }
+  function showPage(i) {
+    var kind = pageOf(i); det = PAGES[kind]; chapter = i;
+    about.dataset.detail = kind; fillFoot(i);
+    if (kind === 'timeline') {
+      document.getElementById('hist-n').textContent = '[' + two(i + 1) + ']';
+      document.getElementById('hist-word').textContent = CHAPTERS[i].title;
+      document.getElementById('hist-crumb').textContent = '[' + two(i + 1) + '] ' + CHAPTERS[i].title;
+    }
+    det.hidden = false; void det.offsetWidth;
+    about.classList.add('is-detail-on'); det.classList.add('is-in'); dfoot.classList.add('is-in');
+    if (kind === 'timeline') playTimeline(); else playMap();
+  }
   function openDetail(i) {
-    if (detailOpen || locked) return;
+    if (locked || !pageOf(i)) return;
+    if (detailOpen) return switchDetail(i);
     detailOpen = true; histTimers.forEach(clearTimeout); histTimers = [];
-    setChapter(i, true); fillDetail(i);
-    for (var k = 0; k < chTrack.children.length; k++) chTrack.children[k].classList.toggle('is-picked', k === i);
+    setChapter(i, true);
+    var stays = pageOf(i) === 'timeline';            // History keeps its word as the page title; on the map every word leaves
+    for (var k = 0; k < chTrack.children.length; k++) chTrack.children[k].classList.toggle('is-picked', stays && k === i);
     chTrack.children[i].classList.remove('is-hover');
     var word = chTrack.children[i].querySelector('.ch__t > span'); clearInterval(scTimers.get(word)); word.textContent = CHAPTERS[i].title;   // stop any letter shuffle mid-way
-    chTrack.style.transform = 'translateY(calc(var(--row) * ' + -i + '))';     // the picked word rides up to the first row
+    if (stays) chTrack.style.transform = 'translateY(calc(var(--row) * ' + -i + '))';     // the picked word rides up to the first row
     about.classList.add('is-detail');
     tick(1, .6);
-    later(function () {
-      hist.hidden = false; hist.classList.remove('is-in', 'is-out'); void hist.offsetWidth;
-      about.classList.add('is-detail-on'); hist.classList.add('is-in');
-      playTimeline();
-    }, reduce ? 0 : 620);
+    later(function () { showPage(i); }, reduce ? 0 : 620);
+  }
+  // from one chapter page straight to another
+  function switchDetail(i) {
+    histTimers.forEach(clearTimeout); histTimers = [];
+    if (det) det.classList.add('is-out');
+    tick(1, .5);
+    later(function () { hidePages(); showPage(i); }, reduce ? 0 : 360);
   }
 
   // the playhead visits each date in turn; a date only cuts in once the playhead is on it
@@ -312,18 +381,17 @@
   }
 
   function resetDetail() {
-    histTimers.forEach(clearTimeout); histTimers = []; detailOpen = false;
-    hist.hidden = true; hist.classList.remove('is-in', 'is-out');
-    about.classList.remove('is-detail', 'is-detail-on');
-    tlHead.classList.remove('is-on');
-    [].forEach.call(tlItems.children, function (li) { li.classList.remove('is-on'); });
+    histTimers.forEach(clearTimeout); histTimers = []; detailOpen = false; det = null;
+    hidePages(); dfoot.classList.remove('is-in');
+    about.classList.remove('is-detail', 'is-detail-on'); delete about.dataset.detail;
     if (chTrack) { [].forEach.call(chTrack.children, function (r) { r.classList.remove('is-picked'); }); setChapter(chapter, true); }
   }
-  // back to the chapter list (optionally landing on another chapter)
+  // leave a chapter page: to another chapter's page if it has one, otherwise back to the chapter list
   function closeDetail(to) {
     if (!detailOpen) return;
+    if (to != null && pageOf(to)) return switchDetail(to);
     histTimers.forEach(clearTimeout); histTimers = [];
-    hist.classList.add('is-out'); tick(-1, .5);
+    if (det) det.classList.add('is-out'); dfoot.classList.remove('is-in'); tick(-1, .5);
     setTimeout(function () {
       if (to != null) chapter = to;
       resetDetail();
