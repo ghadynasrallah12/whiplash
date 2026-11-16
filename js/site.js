@@ -37,6 +37,7 @@
     about.classList.toggle('is-open', name === 'about');
     about.classList.toggle('is-in', name === 'about');
     void about.offsetWidth; about.classList.remove('no-anim');
+    if (name === 'about') { coverPlate(); revealPlate(350); }
     drawLogo(name === 'home');
   }
 
@@ -48,7 +49,8 @@
     LOGO().setMode('flood');
     setTimeout(function () { about.classList.add('is-open'); }, 380);
     setTimeout(function () { setState(SCENES.indexOf('about')); }, 760);
-    setTimeout(function () { about.classList.add('is-in'); }, 820);
+    coverPlate();
+    setTimeout(function () { about.classList.add('is-in'); revealPlate(450); }, 820);
     setTimeout(function () { body.classList.remove('is-opening'); drawLogo(false); locked = false; }, 1500);
   }
   // About → Home: the same thing backwards
@@ -124,6 +126,25 @@
   ];
   var chapter = 0, chTrack, chImg = document.getElementById('ch-img'), chCap = document.getElementById('ch-cap'), chText = document.getElementById('ch-text'), plate = document.querySelector('.plate');
   function two(n) { return (n < 10 ? '0' : '') + n; }
+
+  // the red cubes over the photo
+  var cubes = document.getElementById('cubes'), CUBES = 20, coverT;
+  for (var q = 0; q < CUBES; q++) cubes.appendChild(document.createElement('i'));
+  function coverPlate() { clearTimeout(coverT); for (var k = 0; k < CUBES; k++) cubes.children[k].classList.remove('is-out'); }
+  function revealPlate(wait) {
+    clearTimeout(coverT);
+    var go = function () {
+      if (reduce) { for (var k = 0; k < CUBES; k++) { cubes.children[k].style.setProperty('--d', '0ms'); cubes.children[k].classList.add('is-out'); } return; }
+      // random order: a few go early, most in the middle, a few hang on to the end
+      var order = []; for (var k2 = 0; k2 < CUBES; k2++) order.push(k2);
+      order.sort(function () { return Math.random() - .5; });
+      order.forEach(function (idx, n) { var c = cubes.children[idx]; c.style.setProperty('--d', Math.round(n * 62 + Math.random() * 90) + 'ms'); c.classList.add('is-out'); });
+    };
+    // wait for the picture itself, so the cubes never lift off an empty box
+    var ready = chImg.complete || !chImg.getAttribute('src') ? Promise.resolve() : new Promise(function (r) { chImg.onload = chImg.onerror = r; setTimeout(r, 4000); });
+    ready.then(function () { coverT = setTimeout(go, wait || 0); });
+  }
+
   function renderChapters() {
     var box = document.getElementById('chapters'); box.textContent = '';
     chTrack = document.createElement('div'); chTrack.className = 'chapters__track'; box.appendChild(chTrack);
@@ -151,7 +172,6 @@
     var first = Math.max(0, Math.min(CHAPTERS.length - 3, i - 2));
     chTrack.style.transform = 'translateY(calc(var(--row) * ' + -first + '))';
     if (same) return;
-    plate.dataset.v = i % 5;
     var fill = function () {
       chImg.src = c.image_url || ''; chImg.alt = c.title; chImg.style.visibility = c.image_url ? '' : 'hidden';
       chCap.textContent = '[' + two(i + 1) + '] ' + c.title + (c.caption ? ' — ' + c.caption : '');
@@ -159,12 +179,13 @@
       // big type for a short line; longer copy steps down so it still fits
       var len = (c.body || '').length, k = len <= 46 ? 1 : Math.max(.34, Math.sqrt(46 / len));
       chText.style.fontSize = 'calc(' + (innerWidth <= 760 ? 8.4 : 4.95) + 'vw * ' + k.toFixed(3) + ')';
-      chImg.classList.remove('is-swapping'); chText.classList.remove('is-swapping');
+      chText.classList.remove('is-swapping');
     };
     clearTimeout(swapT);
-    if (instant) return fill();
-    chImg.classList.add('is-swapping'); chText.classList.add('is-swapping');
-    swapT = setTimeout(fill, 260);
+    if (instant) { fill(); coverPlate(); if (about.classList.contains('is-in')) revealPlate(150); return; }
+    chText.classList.add('is-swapping');
+    coverPlate();                                   // cubes snap back over the old picture…
+    swapT = setTimeout(function () { fill(); revealPlate(60); }, 260);   // …and blaze off the new one
   }
   renderChapters();
 
