@@ -15,13 +15,6 @@
         <source src="assets/hero.mp4" type="video/mp4">
       </video>
 
-      <section class="scene" data-scene="about" aria-labelledby="nav-about" hidden>
-        <div class="scene__body">
-          <p class="lead" data-text="about.lead1">We come from music, not film. That's why we care so much about timing. If it doesn't feel right, we don't move on.</p>
-          <p class="lead" data-text="about.lead2">Whiplash is a post-production studio that believes in the power of precision-driven storytelling where every frame is intentional, every cut has weight, and every detail exists.</p>
-          <p class="lead" data-text="about.lead3">We combine strong creative direction with disciplined execution.</p>
-        </div>
-      </section>
       <section class="scene" data-scene="clients"  aria-labelledby="nav-clients"  hidden><h2 class="scene__title">Clients</h2></section>
       <section class="scene" data-scene="projects" aria-labelledby="nav-projects" hidden><h2 class="scene__title">Projects</h2></section>
       <section class="scene" data-scene="team"     aria-labelledby="nav-team"     hidden><h2 class="scene__title">Team</h2></section>
@@ -53,6 +46,20 @@
     <p class="foot foot--l" data-text="home.tagline">Post-production · Beirut / Dubai / KSA</p>
     <p class="foot foot--r"><span data-text="home.reel_label">Showreel 26</span> <span class="rec"><i></i>Rec <span id="tc">00:00:00:00</span></span></p>
   </div>
+
+  <!-- [02] About: a red page the logo floods open. Chapters come from the dashboard (About). -->
+  <section class="about" id="about" aria-labelledby="nav-about" hidden>
+    <p class="about__sub"><span>[02] About — </span><span id="ch-count">5</span> chapters</p>
+    <div class="chapters" id="chapters" role="tablist" aria-label="Chapters"></div>
+    <figure class="plate">
+      <div class="plate__img"><img id="ch-img" src="" alt=""></div>
+      <i class="plate__sq plate__sq--1"></i><i class="plate__sq plate__sq--2"></i><i class="plate__sq plate__sq--3"></i>
+      <figcaption id="ch-cap"></figcaption>
+    </figure>
+    <p class="about__text" id="ch-text"></p>
+    <a class="about__back" href="#home" data-go="home">← [01] Home</a>
+    <span class="about__hint">Pick a chapter</span>
+  </section>
 
   <!-- 3D logo (turns left/right only) -->
   <canvas id="logo" class="logo" aria-label="Whiplash logo"></canvas>

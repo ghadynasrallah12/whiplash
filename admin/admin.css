@@ -195,7 +195,7 @@ dialog p { color: var(--mute); } dialog .btns { display: flex; justify-content: 
   .side { position: fixed; inset: auto 0 0 0; height: auto; flex-direction: row; padding: 6px 6px calc(6px + env(safe-area-inset-bottom)); border-right: 0; border-top: 1.5px solid var(--line); background: var(--black); z-index: 10; gap: 2px; }
   .side__mark, .side__who, .side__foot .nav-item--site { display: none; }
   .side__foot { margin: 0; border: 0; padding: 0; display: contents; }
-  .nav-item, .side__foot .nav-item { flex: 1; justify-content: center; font-size: 13px; padding: 12px 4px; }
+  .nav-item, .side__foot .nav-item { flex: 1; justify-content: center; font-size: 12px; padding: 12px 2px; white-space: nowrap; }
   .nav-item span { display: none; }
   .nav-item[aria-current=page] { box-shadow: inset 0 3px 0 var(--red); }
   .main { padding-top: 22px; padding-bottom: 130px; }

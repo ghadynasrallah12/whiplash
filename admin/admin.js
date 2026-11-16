@@ -82,6 +82,7 @@
       return {
         categories: cats,
         projects: P.map((p, i) => ({ id: 'p-' + i, position: i + 1, name: p[0], type: p[1], category_id: cat(p[2]), description: 'Driven by sound design as much as image, we shape a complete sensory experience; where audio and visuals work seamlessly and land deeply, memorably and with impact.', thumb_url: '../assets/' + p[3] + '.jpg', video_url: i === 0 ? '../assets/hero.mp4' : '', film_link: 'https://vimeo.com/', logo_url: '', award_url: '', credits: cr, is_hero: i === 0, published: i !== 9 })),
+        chapters: [['History', 'Since 20XX', 'We come from music, not film.', 'work-7'], ['Countries', 'Beirut / Dubai / KSA', 'Three cities. One cutting room.', 'work-5'], ['Services', 'Edit to delivery', 'Offline, online, VFX, grade, sound.', 'work-1'], ['Sound', 'Design and mix', 'Sound shapes the cut as much as the image.', 'work-9'], ['Approach', 'Timing first', "If it doesn't feel right, we don't move on.", 'work-3']].map((c, i) => ({ id: 'ch-' + i, position: i + 1, title: c[0], caption: c[1], body: c[2], image_url: '../assets/' + c[3] + '.jpg' })),
         clients: ['Sample Client', 'Another Brand', 'Agency Name'].map((name, i) => ({ id: 'c-' + i, position: i + 1, name, logo_url: '', website: '' })),
         texts: [
           { key: 'home.tagline', group_name: 'Home', label: 'Line under the film, left', kind: 'short', position: 1, value: 'Post-production · Beirut / Dubai / KSA' },
@@ -102,6 +103,7 @@
       };
     };
     try { db = JSON.parse(localStorage.getItem(KEY)) || seed(); } catch (e) { db = seed(); }
+    if (!db.chapters) db.chapters = seed().chapters;   // demo data saved before the About page existed
     const persist = () => { try { localStorage.setItem(KEY, JSON.stringify(db)); } catch (e) { toast('This browser is out of demo storage. Use smaller images.', true); } };
     const wait = (v) => new Promise((r) => setTimeout(() => r(v), 120));
     const shrink = (file) => new Promise((res, rej) => {   // keep demo images small enough for localStorage
@@ -114,7 +116,7 @@
       async signIn(email) { db.session = { id: 'me', email: email || 'you@whiplash.demo', name: 'You', role: 'owner' }; db.editors[0].email = db.session.email; persist(); return wait(db.session); },
       async signOut() { db.session = null; persist(); },
       async setPassword() { return wait(); },
-      async loadAll() { return wait(JSON.parse(JSON.stringify({ projects: db.projects, categories: db.categories, clients: db.clients, texts: db.texts, editors: db.editors }))); },
+      async loadAll() { return wait(JSON.parse(JSON.stringify({ projects: db.projects, categories: db.categories, clients: db.clients, chapters: db.chapters, texts: db.texts, editors: db.editors }))); },
       async save(table, row) { const r = { ...row }; if (!r.id) { r.id = uid(); db[table].push(r); } else db[table] = db[table].map((x) => (x.id === r.id ? r : x)); persist(); return wait(r); },
       async patch(table, id, fields) { db[table] = db[table].map((x) => (x.id === id ? { ...x, ...fields } : x)); persist(); },
       async remove(table, id) { db[table] = db[table].filter((x) => x.id !== id); if (table === 'categories') db.projects.forEach((p) => { if (p.category_id === id) p.category_id = null; }); persist(); return wait(); },
@@ -157,10 +159,11 @@
       async signOut() { await sb.auth.signOut(); },
       async setPassword(password) { const { error } = await sb.auth.updateUser({ password }); if (error) throw new Error(error.message); },
       async loadAll() {
+        const chapters = await sb.from('chapters').select('*').order('position');
         const [projects, categories, clients, texts, editors] = await Promise.all([
           sb.from('projects').select('*').order('position'), sb.from('categories').select('*').order('position'),
           sb.from('clients').select('*').order('position'), sb.from('texts').select('*').order('position'), sb.from('editors').select('*').order('created_at')]);
-        return { projects: ok(projects), categories: ok(categories), clients: ok(clients), texts: ok(texts), editors: ok(editors) };
+        return { projects: ok(projects), categories: ok(categories), clients: ok(clients), chapters: chapters.error ? null : chapters.data, texts: ok(texts), editors: ok(editors) };
       },
       async save(table, row) {
         const { id, created_at, updated_at, ...fields } = row;
@@ -196,7 +199,7 @@
   }
 
   const api = LIVE ? liveApi() : demoApi();
-  const S = { user: null, view: 'projects', q: '', cat: '', projects: [], categories: [], clients: [], texts: [], editors: [] };
+  const S = { user: null, view: 'projects', q: '', cat: '', projects: [], categories: [], clients: [], chapters: [], texts: [], editors: [] };
 
   // =========================================================
   // UI PIECES
@@ -459,6 +462,59 @@
     });
   }
 
+  // ---------- About chapters ----------
+  function viewAbout() {
+    if (S.chapters === null) return [
+      h('div', { class: 'head' }, h('div', null, h('h1', null, 'About'), h('p', null, 'The chapters on the About page.'))),
+      h('div', { class: 'list' }, h('div', { class: 'empty' }, h('h3', null, 'One setup step is missing'), 'Run supabase/schema.sql again in the Supabase SQL Editor, then reload this page. Until then the site shows its built-in chapters.'))];
+    const all = S.chapters.slice().sort(byPos);
+    const list = h('div', { class: 'list' });
+    all.forEach((c, i) => list.append(h('div', { class: 'item', 'data-id': c.id, draggable: true },
+      h('span', { class: 'grip', html: ICON.grip, title: 'Drag to reorder' }),
+      h('span', { class: 'item__n' }, pad2(i + 1)),
+      h('div', { class: 'item__thumb', style: c.image_url ? 'background-image:url("' + encodeURI(c.image_url).replace(/"/g, '%22') + '")' : '' }),
+      h('button', { class: 'item__main', onclick: () => editChapter(c) }, h('span', { class: 'item__name' }, c.title), h('div', { class: 'item__meta' }, [c.caption, c.body].filter(Boolean).join(', '))),
+      h('span'),
+      h('div', { class: 'item__acts' },
+        h('button', { class: 'icon-btn move', 'aria-label': 'Move up', html: ICON.up, disabled: i === 0, onclick: () => nudge('chapters', c.id, -1) }),
+        h('button', { class: 'icon-btn move', 'aria-label': 'Move down', html: ICON.down, disabled: i === all.length - 1, onclick: () => nudge('chapters', c.id, 1) }),
+        h('button', { class: 'icon-btn', 'aria-label': 'Edit ' + c.title, html: ICON.edit, onclick: () => editChapter(c) })))));
+    if (!all.length) list.append(h('div', { class: 'empty' }, h('h3', null, 'No chapters yet'), 'Each chapter is one big word on the About page, with a picture and a short line.', h('br'), h('button', { class: 'btn btn--red', onclick: () => editChapter() }, 'New chapter')));
+    sortable(list, 'chapters', '.item');
+    return [
+      h('div', { class: 'head' }, h('div', null, h('h1', null, 'About'), h('p', null, 'The chapters on the About page, in this order. Visitors pick one to see its picture and line.')),
+        h('div', { class: 'head__actions' }, h('button', { class: 'btn btn--red', onclick: () => editChapter() }, 'New chapter'))),
+      list];
+  }
+  function editChapter(c) {
+    const isNew = !c; c = c || { title: '', caption: '', body: '', image_url: '' };
+    const title = h('input', { type: 'text', value: c.title, placeholder: 'History' });
+    const caption = h('input', { type: 'text', value: c.caption, placeholder: 'Since 2015' });
+    const count = h('span', { class: 'hint' });
+    const text = h('textarea', { value: c.body, rows: 3, oninput: () => paint() });
+    const paint = () => { const n = text.value.trim().length; count.textContent = n + ' characters. Up to about 45 it shows at full size; longer text is set smaller.'; };
+    paint();
+    const img = mediaField({ label: 'Picture', kind: 'image', folder: 'about', value: c.image_url, hint: 'Portrait works best. The site turns it red and lays the three blocks over it.' });
+    openSheet({
+      title: isNew ? 'New chapter' : 'Edit chapter',
+      build(body) { body.append(field('Title', title, 'One word works best. It is shown very large.'), field('Small line under the picture', caption), h('div', { class: 'field' }, h('label', { for: 'chtext' }, 'Statement'), Object.assign(text, { id: 'chtext' }), count), img); },
+      footer(foot, ctl) {
+        const save = h('button', { class: 'btn btn--red', onclick: async () => {
+          if (!title.value.trim()) { title.focus(); return toast('Give the chapter a title.', true); }
+          if (img.busy) return toast('Wait for the upload to finish.', true);
+          save.disabled = true;
+          try { const row = { ...c, title: title.value.trim(), caption: caption.value.trim(), body: text.value.trim(), image_url: img.get() }; if (isNew) row.position = S.chapters.length + 1;
+            const saved = await api.save('chapters', row); if (isNew) S.chapters.push(saved); else S.chapters = S.chapters.map((x) => (x.id === saved.id ? saved : x));
+            ctl.clean(); ctl.close(); render(); toast(isNew ? 'Chapter added' : 'Chapter saved'); } catch (e) { fail(e); save.disabled = false; }
+        } }, 'Save chapter');
+        foot.append(isNew ? h('span') : h('button', { class: 'btn btn--danger', onclick: async () => {
+          if (!await confirmBox({ title: 'Delete "' + c.title + '"?', body: 'It disappears from the About page.', yes: 'Delete chapter', danger: true })) return;
+          try { await api.remove('chapters', c.id); S.chapters = S.chapters.filter((x) => x.id !== c.id); ctl.clean(); ctl.close(); render(); toast('Chapter deleted'); } catch (e) { fail(e); }
+        } }, 'Delete'), h('div', null, h('button', { class: 'btn', onclick: ctl.tryClose }, 'Cancel'), save));
+      },
+    });
+  }
+
   // ---------- Page texts ----------
   function viewTexts() {
     const ORDER = ['Home', 'About', 'Clients', 'Projects', 'Team', 'Contact', 'Search and sharing'];
@@ -532,19 +588,19 @@
   // =========================================================
   // SHELL + BOOT
   // =========================================================
-  const VIEWS = { projects: ['Projects', viewProjects], clients: ['Clients', viewClients], texts: ['Page texts', viewTexts], people: ['People', viewPeople], account: ['Account', viewAccount] };
+  const VIEWS = { projects: ['Projects', viewProjects], about: ['About', viewAbout], clients: ['Clients', viewClients], texts: ['Page texts', viewTexts], people: ['People', viewPeople], account: ['Account', viewAccount] };
 
   async function go(view) {
     if (S.dirtyTexts && S.view === 'texts' && view !== 'texts' && !await confirmBox({ title: 'Leave without saving?', body: 'Your text changes will be lost.', yes: 'Leave', danger: true })) return;
     S.dirtyTexts = false; S.view = view; history.replaceState(null, '', '#' + view); render(); window.scrollTo(0, 0);
   }
   function render() {
-    const count = { projects: S.projects.length, clients: S.clients.length, people: S.editors.length };
+    const count = { projects: S.projects.length, about: (S.chapters || []).length, clients: S.clients.length, people: S.editors.length };
     const nav = (k, cls) => h('button', { class: 'nav-item ' + (cls || ''), 'aria-current': S.view === k ? 'page' : null, onclick: () => go(k) }, VIEWS[k][0], count[k] != null && h('span', null, count[k]));
     $app.replaceChildren(h('div', { class: 'shell' },
       h('nav', { class: 'side', 'aria-label': 'Dashboard' },
         h('div', { class: 'side__mark', html: MARK + '<span>Whiplash</span>' }),
-        nav('projects'), nav('clients'), nav('texts'), nav('people'),
+        nav('projects'), nav('about'), nav('clients'), nav('texts'), nav('people'),
         h('div', { class: 'side__foot' },
           h('a', { class: 'nav-item nav-item--site', href: CFG.siteUrl || '../', target: '_blank', rel: 'noopener' }, 'View site'),
           nav('account'), h('div', { class: 'side__who' }, S.user.email))),

@@ -68,6 +68,16 @@ create table if not exists public.clients (
   website  text not null default ''
 );
 
+-- About page: the chapters (History, Countries, Services…)
+create table if not exists public.chapters (
+  id        uuid primary key default gen_random_uuid(),
+  position  int  not null default 0,
+  title     text not null,                       -- the big word in the list
+  caption   text not null default '',            -- small line under the picture ("Since 20XX")
+  body      text not null default '',            -- the large statement, keep it short
+  image_url text not null default ''
+);
+
 create table if not exists public.texts (
   key        text primary key,                   -- "about.lead1"
   group_name text not null,                      -- "About"
@@ -89,6 +99,7 @@ alter table public.categories enable row level security;
 alter table public.projects   enable row level security;
 alter table public.clients    enable row level security;
 alter table public.texts      enable row level security;
+alter table public.chapters   enable row level security;
 
 drop policy if exists "editors read"     on public.editors;
 create policy "editors read" on public.editors for select using (public.is_editor());
@@ -114,6 +125,11 @@ drop policy if exists "editor write" on public.texts;
 create policy "public read"  on public.texts for select using (true);
 create policy "editor write" on public.texts for all using (public.is_editor()) with check (public.is_editor());
 
+drop policy if exists "public read"  on public.chapters;
+drop policy if exists "editor write" on public.chapters;
+create policy "public read"  on public.chapters for select using (true);
+create policy "editor write" on public.chapters for all using (public.is_editor()) with check (public.is_editor());
+
 -- ---------- Uploaded images and clips ----------
 -- One public bucket: anyone can view a file by its link, only editors can add / replace / delete.
 insert into storage.buckets (id, name, public, file_size_limit)
@@ -133,6 +149,16 @@ select v.name, v.position from (values
   ('Runway',1), ('Cuts on Beat',2), ('Director''s Cut',3), ('Full Throttle',4), ('Postcards',5), ('Prime Time',6)
 ) as v(name, position)
 where not exists (select 1 from public.categories);
+
+insert into public.chapters (title, caption, body, position)
+select v.title, v.caption, v.body, v.position from (values
+  ('History',   'Since 20XX',           'We come from music, not film.', 1),
+  ('Countries', 'Beirut / Dubai / KSA', 'Three cities. One cutting room.', 2),
+  ('Services',  'Edit to delivery',     'Offline, online, VFX, grade, sound.', 3),
+  ('Sound',     'Design and mix',       'Sound shapes the cut as much as the image.', 4),
+  ('Approach',  'Timing first',         'If it doesn''t feel right, we don''t move on.', 5)
+) as v(title, caption, body, position)
+where not exists (select 1 from public.chapters);
 
 insert into public.texts (key, group_name, label, kind, value, position) values
   ('home.tagline',    'Home', 'Line under the film, left',  'short', 'Post-production · Beirut / Dubai / KSA', 1),

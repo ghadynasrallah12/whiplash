@@ -19,6 +19,9 @@ const CONFIG = {
   ease: 0.08,             // follow smoothing
   idleAfterMs: 2500,       // start slow auto-rotation after this much pointer silence
   idleSpeed: 0.25,         // rad/s
+  floodScale: 16,          // how big it gets when it floods the screen (opening About)
+  floodIn: 0.8,            // seconds to flood
+  floodOut: 0.7,           // seconds to come back
 };
 
 const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
@@ -141,12 +144,14 @@ const view = { w: 0, h: 0 };
 const MODES = {
   home: { x: 0.5,   y: 0.5,  scale: 1 },
   page: { x: 0.085, y: 0.485, scale: 1 },          // panel open: logo takes the CLIENTS spot in the left strip (as in the Keynote)
-  hidden: { x: 0.5, y: 0.5, scale: 0 },             // Projects: the thumbnail takes the logo's place
+  hidden: { x: 0.5, y: 0.5, scale: 0 },             // other scenes: no logo
+  flood: { x: 0.5, y: 0.5, scale: 1 },              // About opening: stays centred and grows (see floodT)
 };
 const MODES_MOBILE = {
   home: { x: 0.5, y: 0.5,  scale: 1 },
   page: { x: 0.5, y: 0.22, scale: 0.62 },          // phone: panel is full width, logo tucks under the nav rows
   hidden: { x: 0.5, y: 0.5, scale: 0 },
+  flood: { x: 0.5, y: 0.5, scale: 1 },
 };
 let mode = 'home';
 const posTarget = { x: 0, y: 0, s: 1 };
@@ -225,6 +230,7 @@ window.addEventListener('deviceorientation', (e) => {
 // ---------- Loop -------------------------------------------
 const clock = new THREE.Clock();
 let introT = 0;
+let floodT = 0;   // 0 = normal size, 1 = filling the screen
 
 function animate() {
   const dt = Math.min(clock.getDelta(), 0.05);
@@ -266,17 +272,22 @@ function animate() {
   pivot.rotation.y = CONFIG.basePose.y + current.y + idleAngle;
   pivot.rotation.z = CONFIG.basePose.z;
 
+  // flood: ease-in growth so it starts gently and then rushes at the viewer
+  floodT = Math.max(0, Math.min(1, floodT + (mode === 'flood' ? dt / CONFIG.floodIn : -dt / CONFIG.floodOut)));
+  const flood = reduceMotion ? 1 : 1 + (CONFIG.floodScale - 1) * floodT * floodT * floodT;
+
   // intro: scale up + settle
   if (introT < 1) {
     introT = Math.min(1, introT + dt / 1.1);
     const e = 1 - Math.pow(1 - introT, 3);
-    logo.scale.setScalar((reduceMotion ? 1 : 0.6 + 0.4 * e) * posCurrent.s);
+    logo.scale.setScalar((reduceMotion ? 1 : 0.6 + 0.4 * e) * posCurrent.s * flood);
   } else {
-    logo.scale.setScalar(posCurrent.s);
+    logo.scale.setScalar(posCurrent.s * flood);
     material.opacity = 1;
   }
 
-  renderer.render(scene, camera);
+  // the site switches drawing off while the logo is out of sight (data-off="1" on the canvas)
+  if (canvas.dataset.off !== '1') renderer.render(scene, camera);
   requestAnimationFrame(animate);
 }
 animate();
