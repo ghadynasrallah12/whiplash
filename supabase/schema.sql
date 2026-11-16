@@ -74,7 +74,6 @@ create table if not exists public.chapters (
   position  int  not null default 0,
   title     text not null,                       -- the big word in the list
   caption   text not null default '',            -- small line under the picture ("Since 20XX")
-  body      text not null default '',            -- the large statement, keep it short
   image_url text not null default ''
 );
 
@@ -150,14 +149,12 @@ select v.name, v.position from (values
 ) as v(name, position)
 where not exists (select 1 from public.categories);
 
-insert into public.chapters (title, caption, body, position)
-select v.title, v.caption, v.body, v.position from (values
-  ('History',   'Since 20XX',           'We come from music, not film.', 1),
-  ('Countries', 'Beirut / Dubai / KSA', 'Three cities. One cutting room.', 2),
-  ('Services',  'Edit to delivery',     'Offline, online, VFX, grade, sound.', 3),
-  ('Sound',     'Design and mix',       'Sound shapes the cut as much as the image.', 4),
-  ('Approach',  'Timing first',         'If it doesn''t feel right, we don''t move on.', 5)
-) as v(title, caption, body, position)
+insert into public.chapters (title, caption, position)
+select v.title, v.caption, v.position from (values
+  ('History',   'Since 20XX',           1),
+  ('Countries', 'Beirut / Dubai / KSA', 2),
+  ('Services',  'Edit to delivery',     3)
+) as v(title, caption, position)
 where not exists (select 1 from public.chapters);
 
 insert into public.texts (key, group_name, label, kind, value, position) values

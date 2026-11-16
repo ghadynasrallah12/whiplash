@@ -104,8 +104,9 @@ body:not([data-scene=home]):not(.is-opening) .logo { opacity: 0; }
 .ch { display: flex; align-items: center; height: var(--row); width: 100%; text-align: left; color: #0a0a0c; transition: color .2s; }
 .ch__n { width: 5vw; flex: none; font-size: clamp(11px, 1vw, 24px); letter-spacing: .02em; }
 .ch__t { display: block; overflow: hidden; height: var(--row); }
-.ch__t span { display: block; font-size: calc(var(--row) * 1.2); line-height: var(--row); font-weight: 500; letter-spacing: -.012em; text-transform: uppercase; white-space: nowrap; transform: translateY(105%); transition: transform .8s cubic-bezier(.2, .9, .2, 1); transition-delay: calc(var(--i) * 70ms + 350ms); }
-.about.is-in .ch__t span { transform: none; }
+.ch__t > span { display: block; transform-origin: left center; font-size: calc(var(--row) * 1.2); line-height: var(--row); font-weight: 500; letter-spacing: -.012em; text-transform: uppercase; white-space: nowrap; transform: translateY(105%); transition: transform .8s cubic-bezier(.2, .9, .2, 1); transition-delay: calc(var(--i) * 70ms + 350ms); }
+.about.is-in .ch__t > span { transform: none; }
+.about.is-in.is-settled .ch__t > span { transition: transform .35s cubic-bezier(.3, 1.5, .5, 1); transition-delay: 0s; }
 .ch[aria-selected=true] { color: #fff; }
 
 /* the plate: a photo pushed to red. It arrives covered in red cubes that blaze out one by one
@@ -123,8 +124,14 @@ body:not([data-scene=home]):not(.is-opening) .logo { opacity: 0; }
 }
 .plate figcaption { position: absolute; left: 0; top: calc(100% + 2.2vh); white-space: nowrap; }
 
-.about__text { position: absolute; margin: 0; right: 34.2vw; bottom: 2.4vh; width: 47vw; text-align: right; font-weight: 500; font-size: 4.95vw; line-height: 1.08; letter-spacing: -.02em; text-wrap: balance; opacity: 0; transform: translateY(18px); transition: opacity .5s, transform .6s cubic-bezier(.2, .9, .2, 1); }
-.about.is-in .about__text:not(.is-swapping) { opacity: 1; transform: none; transition-delay: .2s; }
+/* hover on a chapter: the word swells and its letters shuffle (js/site.js → scramble) */
+.about.is-in .ch.is-hover .ch__t > span { transform: scale(1.075); }
+.about.is-settled .ch__t { overflow: visible; }   /* the mask is only for the entrance; a swollen word must not be cut */
+.sc { display: inline-block; }
+.sc--i { font-style: italic; }
+.sc--l { font-weight: 300; }
+.sc--wave { animation: letterWave .9s ease-in-out both; animation-delay: calc(var(--i, 0) * 40ms); }
+@keyframes letterWave { 0% { transform: translateY(0); } 30% { transform: translateY(-.07em) scale(1.06); } 60% { transform: translateY(.03em); } 100% { transform: translateY(0); } }
 
 /* ---------- Cursor ring (trails the pointer; real cursor stays) ---------- */
 .ring { position: fixed; left: 0; top: 0; width: 30px; height: 30px; margin: -15px 0 0 -15px; border: 1.5px solid var(--ink); border-radius: 50%; pointer-events: none; z-index: 9; opacity: 0; transition: opacity .2s, width .2s, height .2s, margin .2s; }
@@ -154,7 +161,6 @@ body:not([data-scene=home]):not(.is-opening) .logo { opacity: 0; }
   .ch__n { width: 44px; }
   .plate { left: auto; right: 18px; top: calc(128px + 11.4vw * 3 + 22px); width: 46vw; height: 58vw; }
   .plate figcaption { top: calc(100% + 10px); left: auto; right: 0; }
-  .about__text { right: 18px; left: 18px; width: auto; bottom: 62px; font-size: 8.4vw; }
   .about__back { bottom: 22px; } .about__hint { right: 18px; bottom: 22px; }
 }
 @media (hover: none) { .ring { display: none; } }

@@ -36,6 +36,7 @@
     about.hidden = name !== 'about';
     about.classList.toggle('is-open', name === 'about');
     about.classList.toggle('is-in', name === 'about');
+    about.classList.toggle('is-settled', name === 'about');
     void about.offsetWidth; about.classList.remove('no-anim');
     if (name === 'about') { coverPlate(); revealPlate(350); }
     drawLogo(name === 'home');
@@ -45,19 +46,20 @@
   function openAbout() {
     locked = true; drawLogo(true);
     body.classList.add('is-opening');
-    about.hidden = false; about.classList.remove('is-in', 'is-open'); void about.offsetWidth;
+    about.hidden = false; about.classList.remove('is-in', 'is-open', 'is-settled'); void about.offsetWidth;
     LOGO().setMode('flood');
     setTimeout(function () { about.classList.add('is-open'); }, 380);
     setTimeout(function () { setState(SCENES.indexOf('about')); }, 760);
     coverPlate();
     setTimeout(function () { about.classList.add('is-in'); revealPlate(450); }, 820);
     setTimeout(function () { body.classList.remove('is-opening'); drawLogo(false); locked = false; }, 1500);
+    setTimeout(function () { about.classList.add('is-settled'); }, 2000);   // entrance done: hovers may now move the words
   }
   // About → Home: the same thing backwards
   function closeAbout() {
     locked = true;
     drawLogo(true);
-    about.classList.remove('is-in', 'is-open');
+    about.classList.remove('is-in', 'is-open', 'is-settled');
     setState(0);
     LOGO().setMode('home');
     setTimeout(function () { about.hidden = true; locked = false; }, 900);
@@ -84,22 +86,13 @@
   });
   document.getElementById('next').addEventListener('click', function () { cutTo(current === SCENES.length - 1 ? 0 : current + 1); });
 
-  // one "step" forward/back: inside About it walks the chapters first, then leaves the page
-  var stepT = 0;
-  function step(dir) {
-    if (locked) return;
-    if (SCENES[current] === 'about') {
-      var now = Date.now(); if (now - stepT < 420) return; stepT = now;
-      var n = chapter + dir;
-      if (n >= 0 && n < CHAPTERS.length) return setChapter(n);
-    }
-    cutTo(current + dir);
-  }
+  // one "step" forward/back = the next / previous page, on every page (chapters on About are picked by hover or click)
+  function step(dir) { if (!locked) cutTo(current + dir); }
   var wheelAcc = 0, wheelT;
   window.addEventListener('wheel', function (e) {
     wheelAcc += Math.abs(e.deltaY) > Math.abs(e.deltaX) ? e.deltaY : e.deltaX;
     clearTimeout(wheelT); wheelT = setTimeout(function () { wheelAcc = 0; }, 160);
-    if (Math.abs(wheelAcc) > 60) { step(wheelAcc > 0 ? 1 : -1); wheelAcc = 0; }
+    if (Math.abs(wheelAcc) > 30) { step(wheelAcc > 0 ? 1 : -1); wheelAcc = 0; }
   }, { passive: true });
   var touch = null;
   window.addEventListener('touchstart', function (e) { touch = e.touches[0] ? { x: e.touches[0].clientX, y: e.touches[0].clientY } : null; }, { passive: true });
@@ -115,16 +108,71 @@
   });
   window.addEventListener('hashchange', function () { var i = SCENES.indexOf(location.hash.slice(1)); if (i > -1) cutTo(i); });
 
+  // ---------- letter shuffle + hover sound (the effect from the old Projects list) ----------
+  // scramble(el, text): each letter runs through random capitals, left to right, flipping
+  // italic / light while it runs, with a small wave through the word.
+  var scTimers = new WeakMap(), ABC = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
+  function scramble(el, text) {
+    if (!el) return;
+    if (reduce) { el.textContent = text; return; }
+    clearInterval(scTimers.get(el));
+    el.textContent = '';
+    var cells = [], n = 0;
+    text.split('').forEach(function (ch) {
+      if (ch === ' ') { el.appendChild(document.createTextNode(' ')); return; }
+      var sp = document.createElement('span'); sp.className = 'sc sc--wave'; sp.style.setProperty('--i', n++); sp.textContent = ch; el.appendChild(sp);
+      cells.push({ s: sp, ch: ch, style: Math.random() < .45 ? ' sc--i' : Math.random() < .5 ? ' sc--l' : '' });
+    });
+    var t = 0, PER = 5, LAG = 2;
+    var id = setInterval(function () {
+      var done = true;
+      cells.forEach(function (c, i) {
+        var start = i * LAG, end = start + PER;
+        if (t < start) { done = false; }
+        else if (t < end) { c.s.textContent = ABC[(Math.random() * 26) | 0]; c.s.className = 'sc sc--wave' + c.style; done = false; }
+        else if (t < end + 4) { c.s.textContent = c.ch; done = false; }                 // right letter, still in its odd style for a beat
+        else { c.s.textContent = c.ch; c.s.className = 'sc sc--wave'; }
+      });
+      t++;
+      if (done) { clearInterval(id); scTimers.delete(el); }
+    }, 42);
+    scTimers.set(el, id);
+  }
+  // sound: a soft bubble with a little bass under it, synthesised (no audio files).
+  // Browsers only allow sound after a real click / key / touch, so it wakes up on the first one.
+  var ac = null;
+  function unlockSound() { try { ac = ac || new (window.AudioContext || window.webkitAudioContext)(); if (ac.state !== 'running') ac.resume(); } catch (e) { /* no audio */ } }
+  ['pointerdown', 'keydown', 'touchend'].forEach(function (ev) { document.addEventListener(ev, unlockSound, { passive: true }); });
+  function tick(dir, vol) {
+    if (reduce || !ac) return;
+    try {
+      if (ac.state !== 'running') { ac.resume(); return; }
+      var t = ac.currentTime + .01, j = .9 + Math.random() * .2;
+      var o = ac.createOscillator(), g = ac.createGain(), lp = ac.createBiquadFilter();
+      o.type = 'sine'; o.frequency.setValueAtTime((dir > 0 ? 620 : 240) * j, t); o.frequency.exponentialRampToValueAtTime((dir > 0 ? 190 : 640) * j, t + .16);
+      g.gain.setValueAtTime(.0001, t); g.gain.exponentialRampToValueAtTime(.22 * vol, t + .012); g.gain.exponentialRampToValueAtTime(.0001, t + .22);
+      lp.type = 'lowpass'; lp.frequency.value = 2200; lp.Q.value = 2;
+      o.connect(lp).connect(g).connect(ac.destination); o.start(t); o.stop(t + .25);
+      var b = ac.createOscillator(), bg = ac.createGain();
+      b.type = 'sine'; b.frequency.setValueAtTime(82, t); b.frequency.exponentialRampToValueAtTime(46, t + .18);
+      bg.gain.setValueAtTime(.0001, t); bg.gain.exponentialRampToValueAtTime(.5 * vol, t + .008); bg.gain.exponentialRampToValueAtTime(.0001, t + .3);
+      b.connect(bg).connect(ac.destination); b.start(t); b.stop(t + .32);
+    } catch (e) { /* no audio */ }
+  }
+  function chapterFx(i, dir) {
+    var row = chTrack && chTrack.children[i]; if (!row) return;
+    scramble(row.querySelector('.ch__t > span'), CHAPTERS[i].title);
+    tick(dir || 1, .6);
+  }
+
   // ---------- About chapters ----------
   // Fallback content; the dashboard (About) replaces it.
   var CHAPTERS = [
-    { title: 'History',   caption: 'Since 20XX',            body: 'We come from music, not film.',                image_url: 'assets/work-7.jpg' },
-    { title: 'Countries', caption: 'Beirut / Dubai / KSA',  body: 'Three cities. One cutting room.',              image_url: 'assets/work-5.jpg' },
-    { title: 'Services',  caption: 'Edit to delivery',      body: 'Offline, online, VFX, grade, sound.',          image_url: 'assets/work-1.jpg' },
-    { title: 'Sound',     caption: 'Design and mix',        body: 'Sound shapes the cut as much as the image.',   image_url: 'assets/work-9.jpg' },
-    { title: 'Approach',  caption: 'Timing first',          body: "If it doesn't feel right, we don't move on.",  image_url: 'assets/work-3.jpg' },
+    { title: 'History',   caption: 'Since 20XX',           image_url: 'assets/work-7.jpg' },
+    { title: 'Countries', caption: 'Beirut / Dubai / KSA', image_url: 'assets/work-5.jpg' },
+    { title: 'Services',  caption: 'Edit to delivery',     image_url: 'assets/work-1.jpg' },
   ];
-  var chapter = 0, chTrack, chImg = document.getElementById('ch-img'), chCap = document.getElementById('ch-cap'), chText = document.getElementById('ch-text'), plate = document.querySelector('.plate');
+  var chapter = 0, chTrack, chImg = document.getElementById('ch-img'), chCap = document.getElementById('ch-cap'), plate = document.querySelector('.plate');
   function two(n) { return (n < 10 ? '0' : '') + n; }
 
   // the red cubes over the photo
@@ -154,8 +202,9 @@
       var n = document.createElement('span'); n.className = 'ch__n'; n.textContent = '[' + two(i + 1) + ']';
       var t = document.createElement('span'); t.className = 'ch__t'; var w = document.createElement('span'); w.textContent = c.title; t.appendChild(w);
       b.appendChild(n); b.appendChild(t);
-      b.addEventListener('pointerenter', function (e) { if (e.pointerType === 'mouse') setChapter(i); });
-      b.addEventListener('click', function () { setChapter(i); });
+      b.addEventListener('pointerenter', function (e) { if (e.pointerType !== 'mouse') return; b.classList.add('is-hover'); setChapter(i); chapterFx(i); });
+      b.addEventListener('pointerleave', function () { b.classList.remove('is-hover'); });
+      b.addEventListener('click', function (e) { setChapter(i); if (e.detail && !b.classList.contains('is-hover')) chapterFx(i); });
       b.addEventListener('focus', function () { setChapter(i); });
       chTrack.appendChild(b);
     });
@@ -175,15 +224,9 @@
     var fill = function () {
       chImg.src = c.image_url || ''; chImg.alt = c.title; chImg.style.visibility = c.image_url ? '' : 'hidden';
       chCap.textContent = '[' + two(i + 1) + '] ' + c.title + (c.caption ? ' — ' + c.caption : '');
-      chText.textContent = c.body || '';
-      // big type for a short line; longer copy steps down so it still fits
-      var len = (c.body || '').length, k = len <= 46 ? 1 : Math.max(.34, Math.sqrt(46 / len));
-      chText.style.fontSize = 'calc(' + (innerWidth <= 760 ? 8.4 : 4.95) + 'vw * ' + k.toFixed(3) + ')';
-      chText.classList.remove('is-swapping');
     };
     clearTimeout(swapT);
     if (instant) { fill(); coverPlate(); if (about.classList.contains('is-in')) revealPlate(150); return; }
-    chText.classList.add('is-swapping');
     coverPlate();                                   // cubes snap back over the old picture…
     swapT = setTimeout(function () { fill(); revealPlate(60); }, 260);   // …and blaze off the new one
   }
@@ -227,7 +270,7 @@
       if (map['seo.title']) document.title = map['seo.title'];
       var d = document.querySelector('meta[name=description]'); if (d && map['seo.description']) d.content = map['seo.description'];
     }).catch(function () { /* keep the words already in the page */ });
-    rest('chapters?select=title,caption,body,image_url&order=position').then(function (rows) {
+    rest('chapters?select=title,caption,image_url&order=position').then(function (rows) {
       if (rows.length) { CHAPTERS = rows; renderChapters(); }
     }).catch(function () { /* table not there yet: keep the built-in chapters */ });
     // the project marked "Homepage film" supplies the reel
