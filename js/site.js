@@ -258,7 +258,31 @@
   var mapEl = document.getElementById('map'), mapSvg = document.getElementById('map-svg'), mapWord = document.getElementById('map-word');
   var routes = [].slice.call(mapSvg.querySelectorAll('.map__route')), cities = [].slice.call(mapSvg.querySelectorAll('.city'));
   var HOME_CITY = 'Beirut', mapReady = false;
-  routes.forEach(function (r) { var len = r.getTotalLength(); r.dataset.len = len; r.style.strokeDasharray = len; r.style.strokeDashoffset = len; });
+  // Each route runs from the middle of Beirut's "[01]" to the middle of the destination's "[0N]",
+  // so the lines never cross the Whiplash marks. Measured from the real text, so it follows any font.
+  function numberBox(g) {
+    var t = g.querySelector('text'), m = /translate\(([-\d.]+)[ ,]+([-\d.]+)\)/.exec(g.getAttribute('transform'));
+    var a = t.getExtentOfChar(0), b = t.getExtentOfChar(3);
+    return { x: +m[1] + (a.x + b.x + b.width) / 2, top: +m[2] + a.y, bottom: +m[2] + a.y + a.height };
+  }
+  function layoutRoutes(drawn) {
+    var from;
+    try { from = numberBox(cityEl('beirut')); } catch (e) { from = null; }
+    routes.forEach(function (r) {
+      if (from && from.bottom > from.top) {
+        var to = numberBox(cityEl(r.dataset.to)), bend = (r.dataset.bend || '.5 .2').split(' ').map(Number);
+        // arrive on the side of the number the curve comes from (from below for Dubai, which sits across the Gulf)
+        var sx = from.x, sy = from.bottom + 2, ex = to.x, ey0 = to.top - 2;
+        var cx = sx + (ex - sx) * bend[0], cy = sy + (ey0 - sy) * bend[1], ey = cy > to.bottom ? to.bottom + 2 : ey0;
+        r.setAttribute('d', 'M' + sx.toFixed(1) + ' ' + sy.toFixed(1) + ' Q' + cx.toFixed(1) + ' ' + cy.toFixed(1) + ' ' + ex.toFixed(1) + ' ' + ey.toFixed(1));
+      }
+      var len = r.getTotalLength(); r.dataset.len = len;
+      r.style.transition = 'none'; r.style.strokeDasharray = len; r.style.strokeDashoffset = drawn ? 0 : len;
+      void r.getBoundingClientRect(); r.style.transition = '';
+    });
+  }
+  layoutRoutes(false);
+  window.addEventListener('resize', function () { if (!mapEl.hidden) layoutRoutes(mapReady); });
   function cityEl(key) { return mapSvg.querySelector('.city[data-city="' + key + '"]'); }
   // the big word: a city name on two lines (BEI / RUT)
   function setMapWord(name, fx) {
@@ -334,7 +358,7 @@
     }
     det.hidden = false; void det.offsetWidth;
     about.classList.add('is-detail-on'); det.classList.add('is-in'); dfoot.classList.add('is-in');
-    if (kind === 'timeline') playTimeline(); else playMap();
+    if (kind === 'timeline') playTimeline(); else { layoutRoutes(false); playMap(); }
   }
   function openDetail(i) {
     if (locked || !pageOf(i)) return;
