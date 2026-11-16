@@ -97,6 +97,11 @@ body:not([data-scene=home]):not(.is-opening) .logo { opacity: 0; }
 .about__back { position: absolute; left: var(--ax); bottom: 4vh; padding: 6px 0; }
 .about__back:hover { color: #fff; }
 .about__hint { position: absolute; right: 6vw; bottom: 4vh; padding: 6px 0; }
+.about__fx { position: absolute; left: 50%; bottom: 4vh; transform: translateX(-50%); padding: 6px 0; font-size: var(--ui); font-weight: 500; letter-spacing: .05em; text-transform: uppercase; line-height: 1; }
+.about__fx b { font-weight: 500; opacity: .4; transition: opacity .15s, color .15s; }
+.about__fx b.is-on { opacity: 1; color: #fff; }
+.about__fx:hover b:not(.is-on) { opacity: .75; }
+.about.is-detail .about__fx { opacity: 0; pointer-events: none; transition: opacity .35s; }
 
 /* chapters: three rows show; the list slides when you go past them */
 .about__list { position: absolute; inset: 0; }
@@ -131,6 +136,17 @@ body:not([data-scene=home]):not(.is-opening) .logo { opacity: 0; }
   100% { opacity: 0; transform: scaleY(0); }
 }
 .plate__scan { position: absolute; left: 0; right: 0; top: 0; height: 2px; background: #fff; box-shadow: 0 0 10px #fff, 0 0 26px rgb(255 255 255 / .6); opacity: 0; pointer-events: none; }
+/* the other option, "Blaze": the photo pushed to red, 20 big cubes that flare and vanish in random order */
+.plate.is-blaze .plate__img { background: var(--page-red); }
+.plate.is-blaze .plate__img img { filter: grayscale(1) contrast(1.15) brightness(.75); mix-blend-mode: multiply; }
+.plate.is-blaze .plate__cubes { grid-template-columns: repeat(4, 1fr); grid-template-rows: repeat(5, 1fr); }
+.plate.is-blaze .plate__cubes i:nth-of-type(n+21) { display: none; }
+.plate__cubes i.is-blaze { animation: blaze .6s cubic-bezier(.4, 0, .2, 1) var(--d, 0ms) both; }
+@keyframes blaze {
+  0%   { opacity: 1; background: var(--page-red); }
+  35%  { opacity: 1; background: #ff6a55; }
+  100% { opacity: 0; background: #ff6a55; }
+}
 .plate__cubes.is-scanning .plate__scan { animation: scanDown .75s cubic-bezier(.5, 0, .5, 1) forwards; }
 @keyframes scanDown { 0% { top: 0; opacity: 1; } 92% { opacity: 1; } 100% { top: 100%; opacity: 0; } }
 .plate figcaption { position: absolute; left: 0; top: calc(100% + 2.2vh); white-space: nowrap; }
@@ -385,6 +401,7 @@ body.is-dark[data-scene=about] .nav a:hover, body.is-dark[data-scene=about] .nav
   .plate { left: auto; right: 18px; top: calc(128px + 11.4vw * 3 + 22px); width: 46vw; height: 58vw; }
   .plate figcaption { top: calc(100% + 10px); left: auto; right: 0; }
   .about__back { bottom: 22px; } .about__hint { right: 18px; bottom: 22px; }
+  .about__fx { bottom: 52px; left: 18px; transform: none; }
 }
 @media (max-width: 760px) {
   .hist { overflow-y: auto; padding: calc(128px + var(--row) + 20px) 18px 0; }

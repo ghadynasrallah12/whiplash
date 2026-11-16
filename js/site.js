@@ -185,18 +185,42 @@
     return p;
   }
   function cellAt(n) { return cubes.children[n]; }
+  // two ways to reveal the photo, switchable on the About page while deciding: 'lock' (safe crack) or 'blaze'
+  var revealMode = 'lock';
+  try { revealMode = localStorage.getItem('whiplash-reveal') === 'blaze' ? 'blaze' : 'lock'; } catch (e) { /* private mode */ }
+  var revealSwitch = document.getElementById('reveal-switch');
+  function paintRevealSwitch() {
+    [].forEach.call(revealSwitch.querySelectorAll('b'), function (b) { b.classList.toggle('is-on', b.dataset.mode === revealMode); });
+    plate.classList.toggle('is-blaze', revealMode === 'blaze');
+  }
+  revealSwitch.addEventListener('click', function () {
+    revealMode = revealMode === 'lock' ? 'blaze' : 'lock';
+    try { localStorage.setItem('whiplash-reveal', revealMode); } catch (e) { /* private mode */ }
+    paintRevealSwitch(); tick(1, .5);
+    chCap.textContent = '[' + two(chapter + 1) + '] ' + CHAPTERS[chapter].title + (CHAPTERS[chapter].caption ? ' — ' + CHAPTERS[chapter].caption : '');
+    coverPlate(); revealPlate(250);                     // replay it straight away with the new one
+  });
   // everything red (used while the picture underneath is swapped)
   function coverPlate() {
-    clearLock();
+    clearLock(); revealId++;
     for (var n = 0; n < CELLS; n++) { var c = cellAt(n); c.className = 'is-red'; c.firstChild.textContent = ''; }
   }
   var HEX = '0123456789ABCDEF';
   function code() { return HEX[(Math.random() * 16) | 0] + HEX[(Math.random() * 16) | 0]; }
+  var revealId = 0;
   function revealPlate(wait) {
     clearLock();
+    var id = ++revealId;
     var go = function () {
+      if (id !== revealId) return;   // a newer reveal has started since
       var cells = []; for (var n = 0; n < CELLS; n++) cells.push(cellAt(n));
       if (reduce) { cells.forEach(function (c) { c.className = ''; }); return; }
+      if (revealMode === 'blaze') {   // the first version: 20 big cubes flare and vanish, a few early, most in the middle
+        var big = cells.slice(0, 20), order = big.slice().sort(function () { return Math.random() - .5; });
+        big.forEach(function (c) { c.className = 'is-red'; c.firstChild.textContent = ''; });
+        order.forEach(function (c, k) { c.style.setProperty('--d', Math.round(k * 62 + Math.random() * 90) + 'ms'); c.classList.add('is-blaze'); });
+        return;
+      }
       // 1) locked: only the pattern stays red
       var p = pattern();
       cells.forEach(function (c, n) { c.className = p[n] ? 'is-red' : ''; c.firstChild.textContent = ''; });
@@ -226,8 +250,8 @@
       }, start + total * step + step + 260);
     };
     // wait for the picture itself, so nothing unlocks over an empty box
-    var ready = chImg.complete || !chImg.getAttribute('src') ? Promise.resolve() : new Promise(function (r) { chImg.onload = chImg.onerror = r; setTimeout(r, 4000); });
-    ready.then(function () { lockLater(go, wait || 0); });
+    var ready = chImg.complete || !chImg.getAttribute('src') ? Promise.resolve() : new Promise(function (r) { chImg.addEventListener('load', r, { once: true }); chImg.addEventListener('error', r, { once: true }); setTimeout(r, 4000); });
+    ready.then(function () { if (id === revealId) lockLater(go, wait || 0); });
   }
   // sounds of the lock: dial clicks and the bolt (silent when Sound is off)
   var lastLockClick = 0;
@@ -256,6 +280,8 @@
       lockClick(.9, .6);
     } catch (e) { /* no audio */ }
   }
+
+  paintRevealSwitch();
 
   function renderChapters() {
     var box = document.getElementById('chapters'); box.textContent = '';
