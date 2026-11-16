@@ -1,0 +1,17 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="robots" content="noindex, nofollow">
+  <title>Whiplash dashboard</title>
+  <!-- the page can be opened as /admin, /admin/ or the file itself, so work out where its files are -->
+  <script>window.ADMIN_BASE = /\/admin$/.test(location.pathname) ? 'admin/' : ''; document.write('<link rel="stylesheet" href="' + ADMIN_BASE + 'admin.css">');</script>
+</head>
+<body>
+  <div id="app"></div>
+  <div id="toasts" aria-live="polite"></div>
+  <noscript>The dashboard needs JavaScript.</noscript>
+  <script>document.write('<script src="' + ADMIN_BASE + 'config.js"><\/script><script src="' + ADMIN_BASE + 'admin.js"><\/script>');</script>
+</body>
+</html>
