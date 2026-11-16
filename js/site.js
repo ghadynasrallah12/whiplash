@@ -131,7 +131,7 @@
   function unlockSound() { try { ac = ac || new (window.AudioContext || window.webkitAudioContext)(); if (ac.state !== 'running') ac.resume(); } catch (e) { /* no audio */ } }
   ['pointerdown', 'keydown', 'touchend'].forEach(function (ev) { document.addEventListener(ev, unlockSound, { passive: true }); });
   function tick(dir, vol) {
-    if (reduce || !ac) return;
+    if (reduce || !ac || !soundOn) return;   // sound switched off = no hover sounds either
     try {
       if (ac.state !== 'running') { ac.resume(); return; }
       var t = ac.currentTime + .01, j = .9 + Math.random() * .2;
@@ -219,13 +219,25 @@
   }
   renderChapters();
 
-  // ---------- sound ----------
-  var sound = document.getElementById('sound');
-  sound.addEventListener('click', function () {
-    reel.muted = !reel.muted;
+  // ---------- sound: ONE switch for everything ----------
+  // "Sound — On / Off" on the homepage rules the reel's audio AND the hover sounds.
+  // On by default; browsers only let audio start after the visitor's first click or key press.
+  // The choice is remembered for the next visit.
+  var sound = document.getElementById('sound'), soundOn = true;
+  try { soundOn = localStorage.getItem('whiplash-sound') !== 'off'; } catch (e) { /* private mode */ }
+  function applySound() {
+    sound.setAttribute('aria-pressed', String(soundOn));
+    reel.muted = !soundOn || !gestured;
     if (!reel.muted) reel.play().catch(function () { reel.muted = true; });
-    sound.setAttribute('aria-pressed', String(!reel.muted));
+  }
+  var gestured = false;
+  ['pointerdown', 'keydown'].forEach(function (ev) { document.addEventListener(ev, function () { if (!gestured) { gestured = true; applySound(); } }, { passive: true }); });
+  sound.addEventListener('click', function () {
+    soundOn = !soundOn;
+    try { localStorage.setItem('whiplash-sound', soundOn ? 'on' : 'off'); } catch (e) { /* private mode */ }
+    applySound();
   });
+  applySound();
 
   // ---------- timecode (hh:mm:ss:ff of the reel) ----------
   var tc = document.getElementById('tc');
