@@ -69,7 +69,7 @@
   desk.appendChild(mb);
 
   var deskIconWrap = el('div', 'desk__icon');
-  var rootIcon = icon('Projects'); deskIconWrap.appendChild(rootIcon); desk.appendChild(deskIconWrap);
+  var rootIcon = icon('Projects', 'is-red'); deskIconWrap.appendChild(rootIcon); desk.appendChild(deskIconWrap);   // the desktop folder is Whiplash red
   var hint = el('p', 'desk__hint', touch ? 'Tap the folder to open it' : 'Double-click the folder to open it'); desk.appendChild(hint);
 
   // PROJECTS window
