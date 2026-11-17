@@ -139,6 +139,7 @@
       async remove(table, id) { db[table] = db[table].filter((x) => x.id !== id); if (table === 'categories') db.projects.forEach((p) => { if (p.category_id === id) p.category_id = null; }); persist(); return wait(); },
       async reorder(table, ids) { ids.forEach((id, i) => { const r = db[table].find((x) => x.id === id); if (r) r.position = i + 1; }); persist(); },
       async saveTexts(list) { list.forEach((t) => { const r = db.texts.find((x) => x.key === t.key); if (r) r.value = t.value; }); persist(); return wait(); },
+      async setSetting(key, value, label) { const r = db.texts.find((x) => x.key === key); if (r) r.value = value; else db.texts.push({ key, group_name: 'Homepage media', label, kind: 'short', position: 0, value }); persist(); return wait(); },
       async upload(file, kind, folder, onProgress) {
         for (let i = 1; i <= 5; i++) { await new Promise((r) => setTimeout(r, 90)); onProgress(i / 5); }
         return kind === 'video' ? URL.createObjectURL(file) : shrink(file);
@@ -193,6 +194,7 @@
       async remove(table, id) { ok(await sb.from(table).delete().eq('id', id)); },
       async reorder(table, ids) { const rs = await Promise.all(ids.map((id, i) => sb.from(table).update({ position: i + 1 }).eq('id', id))); rs.forEach(ok); },
       async saveTexts(list) { const rs = await Promise.all(list.map((t) => sb.from('texts').update({ value: t.value }).eq('key', t.key))); rs.forEach(ok); },
+      async setSetting(key, value, label) { ok(await sb.from('texts').upsert({ key, group_name: 'Homepage media', label, kind: 'short', value }, { onConflict: 'key' })); },
       async upload(file, kind, folder, onProgress) {   // straight into the public "media" bucket (only editors may write, see schema.sql)
         const { data } = await sb.auth.getSession();
         if (!data.session) throw new Error('Your session ended. Sign in again.');
@@ -481,6 +483,29 @@
     });
   }
 
+  // ---------- Homepage: the reel ----------
+  function viewHome() {
+    const val = (k) => (S.texts.find((t) => t.key === k) || {}).value || '';
+    const clip = mediaField({ label: 'Showreel', kind: 'video', folder: 'home', value: val('home.reel'), hint: 'Plays silently inside the frame on the homepage, and full screen with sound when a visitor clicks it. Up to 50 MB.' });
+    const poster = mediaField({ label: 'Still shown while it loads', kind: 'image', folder: 'home', value: val('home.poster'), hint: 'Ideally the first frame of the showreel.' });
+    const save = h('button', { class: 'btn btn--red', onclick: async () => {
+      if (clip.busy || poster.busy) return toast('Wait for the upload to finish.', true);
+      save.disabled = true;
+      try {
+        for (const [k, v, l] of [['home.reel', clip.get(), 'Homepage showreel'], ['home.poster', poster.get(), 'Homepage showreel still']]) {
+          await api.setSetting(k, v, l);
+          const r = S.texts.find((t) => t.key === k); if (r) r.value = v; else S.texts.push({ key: k, group_name: 'Homepage media', label: l, kind: 'short', position: 0, value: v });
+        }
+        toast('Homepage saved');
+      } catch (e) { fail(e); }
+      save.disabled = false;
+    } }, 'Save homepage');
+    return [
+      h('div', { class: 'head' }, h('div', null, h('h1', null, 'Homepage'), h('p', null, 'The film in the homepage frame. Leave it empty to use the clip of the project marked "Homepage film".'))),
+      h('section', { class: 'block' }, h('h2', null, 'Showreel'), h('div', null, clip, poster, h('div', null, save))),
+      h('section', { class: 'block' }, h('h2', null, 'Words'), h('div', null, h('p', { class: 'note' }, 'The line under the film and the label next to the timecode are under Page texts → Home.'), h('div', null, h('button', { class: 'btn', onclick: () => go('texts') }, 'Open Page texts'))))];
+  }
+
   // ---------- About chapters ----------
   function viewAbout() {
     if (S.chapters === null) return [
@@ -618,17 +643,17 @@
   // ---------- Page texts ----------
   function viewTexts() {
     const ORDER = ['Home', 'About', 'About: Countries page', 'About: Services page', 'Clients', 'Projects', 'Team', 'Contact', 'Search and sharing'];
-    const groups = [...new Set(S.texts.map((t) => t.group_name))].sort((a, b) => (ORDER.indexOf(a) + 1 || 99) - (ORDER.indexOf(b) + 1 || 99));
+    const groups = [...new Set(S.texts.filter((t) => t.group_name !== 'Homepage media').map((t) => t.group_name))].sort((a, b) => (ORDER.indexOf(a) + 1 || 99) - (ORDER.indexOf(b) + 1 || 99));
     const inputs = {};
     const bar = h('div', { class: 'savebar' }, h('span', null, 'You have unsaved changes'));
-    const changed = () => S.texts.filter((t) => inputs[t.key].value !== t.value);
+    const changed = () => S.texts.filter((t) => inputs[t.key] && inputs[t.key].value !== t.value);
     const check = () => { bar.classList.toggle('is-on', changed().length > 0); S.dirtyTexts = changed().length > 0; };
     const save = h('button', { class: 'btn', onclick: async () => {
       const list = changed().map((t) => ({ key: t.key, value: inputs[t.key].value })); save.disabled = true;
       try { await api.saveTexts(list); list.forEach((c) => { S.texts.find((t) => t.key === c.key).value = c.value; }); check(); toast('Texts saved'); } catch (e) { fail(e); }
       save.disabled = false;
     } }, 'Save changes');
-    bar.append(h('div', { style: 'display:flex;gap:8px' }, h('button', { class: 'btn btn--ghost', style: 'color:#fff', onclick: () => { S.texts.forEach((t) => { inputs[t.key].value = t.value; }); check(); } }, 'Undo'), save));
+    bar.append(h('div', { style: 'display:flex;gap:8px' }, h('button', { class: 'btn btn--ghost', style: 'color:#fff', onclick: () => { S.texts.forEach((t) => { if (inputs[t.key]) inputs[t.key].value = t.value; }); check(); } }, 'Undo'), save));
     return [
       h('div', { class: 'head' }, h('div', null, h('h1', null, 'Page texts'), h('p', null, 'The words on the site. Edit, then save. Changes go live right away.'))),
       groups.map((g) => h('section', { class: 'block' }, h('h2', null, g), h('div', null,
@@ -688,7 +713,7 @@
   // =========================================================
   // SHELL + BOOT
   // =========================================================
-  const VIEWS = { projects: ['Projects', viewProjects], about: ['About', viewAbout], clients: ['Clients', viewClients], texts: ['Page texts', viewTexts], people: ['People', viewPeople], account: ['Account', viewAccount] };
+  const VIEWS = { home: ['Homepage', viewHome], projects: ['Projects', viewProjects], about: ['About', viewAbout], clients: ['Clients', viewClients], texts: ['Page texts', viewTexts], people: ['People', viewPeople], account: ['Account', viewAccount] };
 
   async function go(view) {
     if (S.dirtyTexts && S.view === 'texts' && view !== 'texts' && !await confirmBox({ title: 'Leave without saving?', body: 'Your text changes will be lost.', yes: 'Leave', danger: true })) return;
@@ -700,7 +725,7 @@
     $app.replaceChildren(h('div', { class: 'shell' },
       h('nav', { class: 'side', 'aria-label': 'Dashboard' },
         h('div', { class: 'side__mark', html: MARK + '<span>Whiplash</span>' }),
-        nav('projects'), nav('about'), nav('clients'), nav('texts'), nav('people'),
+        nav('home'), nav('projects'), nav('about'), nav('clients'), nav('texts'), nav('people'),
         h('div', { class: 'side__foot' },
           h('a', { class: 'nav-item nav-item--site', href: CFG.siteUrl || '../', target: '_blank', rel: 'noopener' }, 'View site'),
           nav('account'), h('div', { class: 'side__who' }, S.user.email))),

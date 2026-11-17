@@ -22,6 +22,11 @@
       <section class="scene" data-scene="contact"  aria-labelledby="nav-contact"  hidden><h2 class="scene__title">Contact</h2></section>
 
       <div class="cut" aria-hidden="true"></div>
+      <!-- full-screen player controls (only while the reel is open) -->
+      <div class="theater" aria-hidden="true">
+        <button class="theater__close" id="th-close" type="button" tabindex="-1">Close <span aria-hidden="true">✕</span></button>
+        <div class="theater__bar"><span id="th-time">00:00</span><div class="theater__track" id="th-track"><i id="th-fill"></i></div><span id="th-dur">00:00</span><button id="th-mute" type="button" tabindex="-1">Sound on</button></div>
+      </div>
     </div>
 
     <!-- crop marks, one outside each corner of the frame -->
@@ -166,6 +171,14 @@
   <!-- 3D logo (turns left/right only) -->
   <canvas id="logo" class="logo" aria-label="Whiplash logo"></canvas>
   <div class="ring" aria-hidden="true"></div>
+  <!-- cursor over the reel: a spinning "play the reel" disc -->
+  <div class="reelcur" aria-hidden="true">
+    <svg viewBox="0 0 120 120"><defs><path id="rc-ring" d="M60 60m-46 0a46 46 0 1 1 92 0a46 46 0 1 1-92 0"/></defs>
+      <circle cx="60" cy="60" r="58" class="reelcur__disc"/>
+      <g class="reelcur__spin"><text><textPath href="#rc-ring" textLength="285">PLAY THE REEL • PLAY THE REEL •</textPath></text></g>
+      <path class="reelcur__play" d="M52 46l20 14-20 14z"/><g class="reelcur__pause"><rect x="49" y="47" width="7" height="26"/><rect x="64" y="47" width="7" height="26"/></g>
+    </svg>
+  </div>
 
   <script src="admin/config.js"></script>
   <script src="js/logo3d.js" defer></script>

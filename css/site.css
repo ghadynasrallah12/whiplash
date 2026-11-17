@@ -420,6 +420,56 @@ body[data-scene=contact] .nav a:hover, body[data-scene=contact] .nav a[aria-curr
 .cfoot__c { margin-left: auto; }
 .contact.is-closing .cta, .contact.is-closing .offices, .contact.is-closing .cfoot, .contact.is-closing .wm { opacity: 0; transition: opacity .2s; }
 
+body.no-trans .frame, body.no-trans .stage > *, body.no-trans .stage::after, body.no-trans .reel { transition: none !important; }
+/* ---------- Homepage reel: hover cursor + full-screen player ----------
+   Hover the frame: the cursor becomes a red disc with "Play the reel" spinning round it.
+   Click: the 3D logo shrinks away, the frame grows from where it is to (almost) the whole screen,
+   colour comes into the film and everything around it blurs out. Esc / Close puts it back. */
+.reelcur { position: fixed; left: 0; top: 0; width: 120px; height: 120px; margin: -60px 0 0 -60px; pointer-events: none; z-index: 10; transform: scale(0); opacity: 0; transition: opacity .2s; }
+.reelcur svg { width: 100%; height: 100%; display: block; transform: scale(var(--s, 0)); transition: transform .45s cubic-bezier(.3, 1.5, .5, 1); }
+.reelcur.is-on { opacity: 1; }
+.reelcur.is-on svg { --s: 1; }
+.reelcur__disc { fill: var(--red); }
+.reelcur text { font: 600 10.5px/1 var(--font); letter-spacing: .12em; fill: #fff; }
+.reelcur__spin { transform-origin: 60px 60px; animation: rcSpin 7s linear infinite; }
+@keyframes rcSpin { to { transform: rotate(360deg); } }
+.reelcur__play, .reelcur__pause rect { fill: #fff; }
+.reelcur__pause { display: none; }
+.reelcur.is-small svg { --s: .55; }
+.reelcur.is-small text { display: none; }
+.reelcur.is-pause .reelcur__play { display: none; }
+.reelcur.is-pause .reelcur__pause { display: block; }
+body[data-scene=home]:not(.is-theater) .frame { cursor: none; }
+body.is-theater .frame { cursor: none; }
+body.reel-hover .ring { opacity: 0 !important; }
+
+.frame { z-index: 2; transition: top .95s cubic-bezier(.7, 0, .2, 1), left .95s cubic-bezier(.7, 0, .2, 1), right .95s cubic-bezier(.7, 0, .2, 1), bottom .95s cubic-bezier(.7, 0, .2, 1), box-shadow .9s; }
+.reel { transition: filter 1s ease .2s; }
+body.is-theater .frame { top: 3.5vh; left: 3vw; right: 3vw; bottom: 3.5vh; box-shadow: 0 30px 120px rgb(0 0 0 / .7); z-index: 9; }
+body.is-theater .reel { filter: none; }
+.stage > :not(.frame) { transition: filter .9s ease, opacity .9s ease; }
+body.is-theater .stage > :not(.frame) { filter: blur(14px); opacity: .25; pointer-events: none; }
+.stage::after { content: ""; position: absolute; inset: 0; background: rgb(0 0 0 / .65); -webkit-backdrop-filter: blur(10px); backdrop-filter: blur(10px); opacity: 0; pointer-events: none; transition: opacity .9s ease; z-index: 1; }
+body.is-theater .stage::after { opacity: 1; }
+body.is-theater .logo { opacity: 0; transition: opacity .5s ease; }
+
+.theater { position: absolute; inset: 0; pointer-events: none; opacity: 0; transition: opacity .4s; z-index: 3; }
+body.is-theater .theater { opacity: 1; transition-delay: .8s; }
+body.is-theater .theater button, body.is-theater .theater__track { pointer-events: auto; }
+.theater__close { position: absolute; top: 2.4vh; right: 1.6vw; padding: 9px 14px; border-radius: 999px; background: rgb(0 0 0 / .45); -webkit-backdrop-filter: blur(10px); backdrop-filter: blur(10px); color: #fff; font-size: var(--ui); font-weight: 500; letter-spacing: .05em; text-transform: uppercase; cursor: pointer; }
+.theater__close:hover { background: var(--red); }
+.theater__bar { position: absolute; left: 1.6vw; right: 1.6vw; bottom: 2.2vh; display: flex; align-items: center; gap: 14px; color: #fff; font-size: var(--ui); font-weight: 500; letter-spacing: .05em; font-variant-numeric: tabular-nums; text-transform: uppercase; text-shadow: 0 1px 6px rgb(0 0 0 / .5); }
+.theater__track { position: relative; flex: 1; height: 18px; cursor: pointer; }
+.theater__track::before { content: ""; position: absolute; left: 0; right: 0; top: 8px; height: 2px; background: rgb(255 255 255 / .3); }
+.theater__track i { position: absolute; left: 0; top: 8px; height: 2px; width: 0; background: var(--red); }
+.theater__track i::after { content: ""; position: absolute; right: -6px; top: -5px; width: 12px; height: 12px; border-radius: 50%; background: var(--red); }
+.theater__bar button { padding: 6px 0; cursor: pointer; }
+.theater__bar button:hover { color: var(--red); }
+.theater button:focus-visible { outline: 1.5px solid #fff; outline-offset: 3px; }
+body.is-theater .theater:hover ~ * { cursor: auto; }
+@media (max-width: 760px) { body.is-theater .frame { top: 12vh; bottom: 12vh; left: 0; right: 0; } .reelcur { display: none; } }
+@media (hover: none) { .reelcur { display: none; } }
+
 /* ---------- Cursor ring (trails the pointer; real cursor stays) ---------- */
 .ring { position: fixed; left: 0; top: 0; width: 30px; height: 30px; margin: -15px 0 0 -15px; border: 1.5px solid var(--ink); border-radius: 50%; pointer-events: none; z-index: 9; opacity: 0; transition: opacity .2s, width .2s, height .2s, margin .2s; }
 .ring.is-on { opacity: 1; }

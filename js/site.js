@@ -31,6 +31,7 @@
   function snap(i) {
     var name = SCENES[i];
     if (typeof closeTry === 'function') closeTry(true);
+    if (typeof exitTheater === 'function' && name !== 'home') exitTheater(true);
     // [04] Projects is its own "desktop" (js/desk.js) laid over the site
     var D = window.WL_DESK;
     if (D) { if (name === 'projects') D.open(true); else if (!D.busy) D.close(true); }
@@ -106,7 +107,7 @@
   function step(dir) { if (!locked) cutTo(current + dir); }
   // Scrolling and swiping do NOT change pages (by request): pages change on click, or with the arrow keys.
   window.addEventListener('keydown', function (e) {
-    if (body.classList.contains('desk-on')) return;     // the Projects desktop has its own keys
+    if (body.classList.contains('desk-on') || theater) return;     // the Projects desktop / the player have their own keys
     if (tryOpen) return;
     if (['ArrowRight', 'ArrowDown', 'PageDown'].indexOf(e.key) > -1) step(1);
     if (['ArrowLeft', 'ArrowUp', 'PageUp'].indexOf(e.key) > -1) step(-1);
@@ -805,11 +806,13 @@
   function rest(path) {
     return fetch(CFG.supabaseUrl + '/rest/v1/' + path, { headers: { apikey: CFG.supabaseAnonKey, Authorization: 'Bearer ' + CFG.supabaseAnonKey } }).then(function (r) { if (!r.ok) throw new Error(r.status); return r.json(); });
   }
+  var reelFromDash = false;
   if (CFG.supabaseUrl && CFG.supabaseAnonKey) {
     rest('texts?select=key,value').then(function (rows) {
       var map = {}; rows.forEach(function (r) { map[r.key] = r.value; });
       document.querySelectorAll('[data-text]').forEach(function (el) { var v = map[el.dataset.text]; if (v) el.textContent = v; });
       document.querySelectorAll('[data-href]').forEach(function (el) { var v = map[el.dataset.href]; if (v) el.href = v; });
+      if (map['home.reel']) { reelFromDash = true; if (map['home.poster']) reel.poster = map['home.poster']; reel.src = map['home.reel']; reel.play().catch(function () {}); }
       if (map['seo.title']) document.title = map['seo.title'];
       var d = document.querySelector('meta[name=description]'); if (d && map['seo.description']) d.content = map['seo.description'];
     }).catch(function () { /* keep the words already in the page */ });
@@ -824,7 +827,7 @@
     }).catch(function () { /* keep the built-in dates */ });
     // the project marked "Homepage film" supplies the reel
     rest('projects?select=video_url,thumb_url&is_hero=eq.true&published=eq.true&limit=1').then(function (rows) {
-      var p = rows[0]; if (!p || !p.video_url) return;
+      var p = rows[0]; if (!p || !p.video_url || reelFromDash) return;
       if (p.thumb_url) reel.poster = p.thumb_url;
       reel.src = p.video_url; reel.play().catch(function () {});
     }).catch(function () {});
@@ -949,6 +952,76 @@
     if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(addr).then(ok, function () { location.href = 'mailto:' + addr; });
     else location.href = 'mailto:' + addr;
   });
+
+  // ---------- Homepage reel: hover cursor + full-screen player ----------
+  var frame = document.querySelector('.frame'), rc = document.querySelector('.reelcur');
+  var theater = false, rcx = 0, rcy = 0, rcMx = 0, rcMy = 0, rcOn = false, rcRaf = 0;
+  var thTime = document.getElementById('th-time'), thDur = document.getElementById('th-dur'), thFill = document.getElementById('th-fill'), thTrack = document.getElementById('th-track'), thMute = document.getElementById('th-mute');
+  function mmss(t) { t = Math.max(0, t || 0); return two(Math.floor(t / 60)) + ':' + two(Math.floor(t % 60)); }
+  function rcLoop() {
+    rcx += (rcMx - rcx) * .2; rcy += (rcMy - rcy) * .2;
+    rc.style.transform = 'translate(' + rcx.toFixed(1) + 'px,' + rcy.toFixed(1) + 'px)';
+    if (theater) { thTime.textContent = mmss(reel.currentTime); thDur.textContent = mmss(reel.duration); thFill.style.width = (reel.duration ? reel.currentTime / reel.duration * 100 : 0) + '%'; }
+    rcRaf = (rcOn || theater) ? requestAnimationFrame(rcLoop) : 0;
+  }
+  function reelHoverable() { return SCENES[current] === 'home' && !locked && !body.classList.contains('is-cutting'); }
+  function setRc(on, e) {
+    if (e) { rcMx = e.clientX; rcMy = e.clientY; if (!rcOn && on) { rcx = rcMx; rcy = rcMy; } }
+    rcOn = on; rc.classList.toggle('is-on', on); body.classList.toggle('reel-hover', on);
+    rc.classList.toggle('is-small', theater); rc.classList.toggle('is-pause', theater && !reel.paused);
+    if (on && !rcRaf) rcRaf = requestAnimationFrame(rcLoop);
+  }
+  frame.addEventListener('pointermove', function (e) {
+    if (e.pointerType !== 'mouse') return;
+    var overControls = !!e.target.closest('.theater button, .theater__track');
+    setRc((theater && !overControls) || (!theater && reelHoverable()), e);
+  });
+  frame.addEventListener('pointerleave', function () { setRc(false); });
+  frame.addEventListener('click', function (e) {
+    if (e.target.closest('.theater button, .theater__track')) return;
+    if (theater) { if (reel.paused) reel.play().catch(function () {}); else reel.pause(); setRc(true, e); return; }
+    if (reelHoverable()) enterTheater();
+  });
+  function enterTheater() {
+    if (theater) return;
+    theater = true; unlockSound();
+    body.classList.add('is-theater');
+    LOGO().setMode('hidden');                                   // the logo shrinks away into the film
+    reel.muted = !soundOn; reel.play().catch(function () { reel.muted = true; reel.play().catch(function () {}); });
+    thMute.textContent = reel.muted ? 'Sound off' : 'Sound on';
+    [].forEach.call(frame.querySelectorAll('.theater button'), function (b) { b.tabIndex = 0; });
+    frame.querySelector('.theater').setAttribute('aria-hidden', 'false');
+    rc.classList.add('is-small'); setTimeout(function () { rc.classList.toggle('is-pause', theater && !reel.paused); }, 120); tick(1, .55);
+    if (!rcRaf) rcRaf = requestAnimationFrame(rcLoop);
+    setTimeout(function () { if (theater) document.getElementById('th-close').focus({ preventScroll: true }); }, 900);
+  }
+  function exitTheater(instant) {
+    if (!theater) return;
+    theater = false;
+    if (instant) body.classList.add('no-trans');
+    body.classList.remove('is-theater');
+    if (instant) { void body.offsetWidth; body.classList.remove('no-trans'); }
+    if (SCENES[current] === 'home') LOGO().setMode('home');
+    applySound(); if (reel.paused) reel.play().catch(function () {});
+    [].forEach.call(frame.querySelectorAll('.theater button'), function (b) { b.tabIndex = -1; });
+    frame.querySelector('.theater').setAttribute('aria-hidden', 'true');
+    setRc(false); tick(-1, .5);
+  }
+  document.getElementById('th-close').addEventListener('click', function () { exitTheater(); });
+  thMute.addEventListener('click', function () { reel.muted = !reel.muted; if (!reel.muted) reel.play().catch(function () {}); thMute.textContent = reel.muted ? 'Sound off' : 'Sound on'; });
+  var seeking = false;
+  function seekAt(e) { var r = thTrack.getBoundingClientRect(); if (reel.duration) reel.currentTime = Math.max(0, Math.min(1, (e.clientX - r.left) / r.width)) * reel.duration; }
+  thTrack.addEventListener('pointerdown', function (e) { seeking = true; thTrack.setPointerCapture(e.pointerId); seekAt(e); });
+  thTrack.addEventListener('pointermove', function (e) { if (seeking) seekAt(e); });
+  thTrack.addEventListener('pointerup', function () { seeking = false; });
+  window.addEventListener('keydown', function (e) {
+    if (!theater) return;
+    if (e.key === 'Escape') { e.preventDefault(); exitTheater(); }
+    else if (e.key === ' ' && !e.target.closest('button')) { e.preventDefault(); if (reel.paused) reel.play().catch(function () {}); else reel.pause(); }
+  }, true);
+  // ripple of the sound switch: leaving the player hands the reel's sound back to it
+  reel.addEventListener('play', function () { rc.classList.toggle('is-pause', theater); });
+  reel.addEventListener('pause', function () { rc.classList.remove('is-pause'); });
 
   // shared with js/desk.js
   window.WL = { cutTo: function (name) { cutTo(SCENES.indexOf(name)); }, tick: function (d, v) { tick(d, v); }, rest: rest, live: !!(CFG.supabaseUrl && CFG.supabaseAnonKey), reduce: reduce, unlock: function () { unlockSound(); } };
