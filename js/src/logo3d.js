@@ -178,10 +178,11 @@ window.WHIPLASH_LOGO = {
   setMode(next, panel) {
     if (panel) panelEl = panel;
     if (next === mode) return;
+    const prev = mode;
     mode = next;
     applyMode();
-    // a little flourish: one extra turn while it glides over
-    if (!reduceMotion) target.y += next === 'home' ? -1.4 : 1.4;
+    // a little flourish: one extra turn while it glides over (not into or out of the flood: that one stays square-on)
+    if (!reduceMotion && next !== 'flood' && prev !== 'flood') target.y += next === 'home' ? -1.4 : 1.4;
   },
 };
 
@@ -280,13 +281,18 @@ function animate() {
   posCurrent.s += (posTarget.s - posCurrent.s) * pe;
   pivot.position.set(posCurrent.x, posCurrent.y, 0);
 
-  pivot.rotation.x = CONFIG.basePose.x + current.x + breathe;
-  pivot.rotation.y = CONFIG.basePose.y + current.y + idleAngle;
-  pivot.rotation.z = CONFIG.basePose.z;
-
   // flood: ease-in growth so it starts gently and then rushes at the viewer
   floodT = Math.max(0, Math.min(1, floodT + (mode === 'flood' ? dt / CONFIG.floodIn : -dt / CONFIG.floodOut)));
-  const flood = reduceMotion ? 1 : 1 + (CONFIG.floodScale - 1) * floodT * floodT * floodT;
+  // while it floods it turns square to the screen (to the nearest face), so it spreads out evenly left and right
+  const fr = Math.min(1, floodT / 0.5), square = fr * fr * (3 - 2 * fr);
+  const ry = CONFIG.basePose.y + current.y + idleAngle, ryFace = Math.round(ry / Math.PI) * Math.PI;
+  pivot.rotation.x = (CONFIG.basePose.x + current.x + breathe) * (1 - square);
+  pivot.rotation.y = ry + (ryFace - ry) * square;
+  pivot.rotation.z = CONFIG.basePose.z * (1 - square);
+  // big enough that the middle bar (where the screen's centre sits) is wider than the screen: no gaps at either edge
+  const unit = pivot.scale.x * Math.max(posCurrent.s, 0.01);
+  const floodMax = Math.max(CONFIG.floodScale, (view.w * 1.12) / (21.2 * unit));
+  const flood = reduceMotion ? 1 : 1 + (floodMax - 1) * floodT * floodT * floodT;
   // as it fills the screen the shading melts into one flat red, exactly the About page's, so the page takes over seamlessly
   const fk = Math.max(0, Math.min(1, (floodT - 0.45) / 0.45)), flat = fk * fk * (3 - 2 * fk);
   key.intensity = LIT.key * (1 - flat); fill.intensity = LIT.fill * (1 - flat); rim.intensity = LIT.rim * (1 - flat);
