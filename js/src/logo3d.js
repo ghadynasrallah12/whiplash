@@ -10,6 +10,7 @@ window.THREE = THREE;   // shared with js/gl-media.js
 // ---------- Tunables -------------------------------------
 const CONFIG = {
   color: 0xd41e12,   // brand red rgb(171,35,27) once lit         // base red
+  pageRed: 0xab231b,       // the About page's red = the lit front face; the flood flattens into it
   depth: 14,               // extrusion depth (bar width = 16)
   skewDeg: 0,             // italic slant of the glyph
   heightVH: 0.26,          // logo height as a fraction of viewport height (desktop)
@@ -57,7 +58,10 @@ const fill = new THREE.DirectionalLight(0xffe4e0, 0.3);
 fill.position.set(-220, -40, 160);
 const rim = new THREE.DirectionalLight(0xffffff, 0.5);
 rim.position.set(120, 180, -220);
-scene.add(key, fill, rim, new THREE.AmbientLight(0xffffff, 0.12));
+const amb = new THREE.AmbientLight(0xffffff, 0.12);
+scene.add(key, fill, rim, amb);
+const LIT = { key: key.intensity, fill: fill.intensity, rim: rim.intensity, amb: amb.intensity, env: scene.environmentIntensity };
+const FLAT = new THREE.Color(CONFIG.pageRed);
 
 // ---------- Glyph (2-D outline, y-up, H = 100 units) ----------
 // Traced from the flat logo (whiplash-logo.jpg):
@@ -283,6 +287,11 @@ function animate() {
   // flood: ease-in growth so it starts gently and then rushes at the viewer
   floodT = Math.max(0, Math.min(1, floodT + (mode === 'flood' ? dt / CONFIG.floodIn : -dt / CONFIG.floodOut)));
   const flood = reduceMotion ? 1 : 1 + (CONFIG.floodScale - 1) * floodT * floodT * floodT;
+  // as it fills the screen the shading melts into one flat red, exactly the About page's, so the page takes over seamlessly
+  const fk = Math.max(0, Math.min(1, (floodT - 0.45) / 0.45)), flat = fk * fk * (3 - 2 * fk);
+  key.intensity = LIT.key * (1 - flat); fill.intensity = LIT.fill * (1 - flat); rim.intensity = LIT.rim * (1 - flat);
+  amb.intensity = LIT.amb * (1 - flat); scene.environmentIntensity = LIT.env * (1 - flat);
+  material.emissive.copy(FLAT).multiplyScalar(flat);
 
   // intro: scale up + settle
   if (introT < 1) {

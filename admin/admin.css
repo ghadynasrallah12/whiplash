@@ -175,7 +175,7 @@ a { color: inherit; }
 .credit { display: grid; grid-template-columns: 1fr 1.3fr 36px; gap: 8px; align-items: center; }
 .credit input { background: var(--black); border: 1.5px solid var(--line); border-radius: 10px; padding: 9px 12px; width: 100%; }
 .credit input:focus { outline: none; border-color: var(--ink); }
-.catrow { display: grid; grid-template-columns: 1fr 36px 36px 36px; gap: 6px; align-items: center; }
+.catrow { display: grid; grid-template-columns: 1fr auto 36px 36px 36px; gap: 6px; align-items: center; }
 .catrow input { background: var(--black); border: 1.5px solid var(--line); border-radius: 10px; padding: 9px 12px; width: 100%; }
 
 /* ---------- Dialog + toasts ---------- */
@@ -215,3 +215,9 @@ dialog p { color: var(--mute); } dialog .btns { display: flex; justify-content: 
 }
 @media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation-duration: .01ms !important; transition-duration: .01ms !important; } }
 .savebar .btn.btn--ghost { background: none; border-color: transparent; color: #fff; }
+
+.switch--sm { align-items: center; gap: 8px; padding: 0 4px; }
+.switch--sm i { width: 34px; height: 20px; margin: 0; }
+.switch--sm i::after { width: 14px; height: 14px; }
+.switch--sm input:checked + i::after { transform: translateX(14px); }
+.switch--sm b { font-size: 13px; font-weight: 500; }

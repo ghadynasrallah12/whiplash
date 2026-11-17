@@ -549,7 +549,7 @@
     if (scr || !ac) return scr;
     try {
       var sr = ac.sampleRate, n = Math.floor(sr * 1.6), fwd = ac.createBuffer(1, n, sr), rev = ac.createBuffer(1, n, sr), d = fwd.getChannelData(0), r = rev.getChannelData(0);
-      var F = [[700, 1], [1220, .55], [2600, .25]], f0 = 146.8;   // an "ahh": a voice-like tone, the classic scratch sample
+      var F = [[420, 1], [760, .6], [2300, .18]], f0 = 82.4;   // a low "ohh": a deep voice-like tone (the higher "ahh" sounded like a cat once sped up)
       for (var t = 0; t < n; t++) {
         var tt = t / sr, v = 0, vib = f0 * (1 + .012 * Math.sin(2 * Math.PI * 5 * tt));
         for (var k = 1; k * f0 < 4200; k++) {
@@ -574,11 +574,11 @@
   var scrIdle;
   function scratch(v) {   // v = how fast the line moves, in % of the screen per second (sign = direction)
     if (reduce || !ac || !soundOn || ac.state !== 'running' || !buildScratch()) return;
-    var t = ac.currentTime, sp = Math.min(Math.abs(v) / 55, 3.2), vol = Math.min(Math.abs(v) / 90, 1) * .55;
+    var t = ac.currentTime, sp = Math.min(Math.abs(v) / 110, 1.25), vol = Math.min(Math.abs(v) / 70, 1) * .6;
     var on = v >= 0 ? scr.A : scr.B, off = v >= 0 ? scr.B : scr.A;
-    on.src.playbackRate.setTargetAtTime(Math.max(.08, sp), t, .012);
-    on.g.gain.setTargetAtTime(vol, t, .012); off.g.gain.setTargetAtTime(0, t, .008);
-    scr.lp.frequency.setTargetAtTime(700 + sp * 1600, t, .02);
+    on.src.playbackRate.setTargetAtTime(Math.max(.06, sp), t, .04);
+    on.g.gain.setTargetAtTime(vol, t, .03); off.g.gain.setTargetAtTime(0, t, .02);
+    scr.lp.frequency.setTargetAtTime(450 + sp * 900, t, .05);
     clearTimeout(scrIdle);
     scrIdle = setTimeout(function () { if (scr) { scr.A.g.gain.setTargetAtTime(0, ac.currentTime, .03); scr.B.g.gain.setTargetAtTime(0, ac.currentTime, .03); } }, 70);
   }
@@ -593,43 +593,39 @@
     } catch (e) { /* no audio */ }
   }
 
-  // dragging the cut
-  var drag = null, lastNotch = Math.round(50 / 4);
-  function moveTo(pct, now) {
-    var dt = Math.max((now - (drag ? drag.t : now)) / 1000, 1 / 240), v = drag ? (pct - drag.x) / dt : 0;
-    setX(pct);
-    if (drag) { scratch(v); drag.x = tryX; drag.t = now; }
+  // dragging the cut: the hand sets a target and the line follows it on a spring with a speed limit,
+  // so it can't be flung across, and it glides to a stop instead of halting dead
+  var drag = null, lastNotch = Math.round(50 / 4), tryT = 50, tryV = 0, tryLast = 0, tryMove = 0;
+  var TRY_VMAX = 130, TRY_K = 55, TRY_C = 2 * Math.sqrt(55);    // max speed in % of the screen per second; spring stiffness; critical damping
+  function aimAt(pct) { tryT = Math.max(0, Math.min(100, pct)); if (!tryMove) { tryLast = 0; tryMove = requestAnimationFrame(tryStep); } }
+  function tryStep(now) {
+    var dt = tryLast ? Math.min(.05, (now - tryLast) / 1000) : 1 / 60; tryLast = now;
+    tryV += ((tryT - tryX) * TRY_K - tryV * TRY_C) * dt;
+    tryV = Math.max(-TRY_VMAX, Math.min(TRY_VMAX, tryV));
+    setX(tryX + tryV * dt);
+    scratch(tryV);
     var notch = Math.round(tryX / 4); if (notch !== lastNotch) { lastNotch = notch; frameClick(); }
+    if (tryOpen && (Math.abs(tryT - tryX) > .02 || Math.abs(tryV) > .3)) tryMove = requestAnimationFrame(tryStep);
+    else { tryMove = 0; tryV = 0; scratch(0); }
   }
   tryStage.addEventListener('pointerdown', function (e) {
     if (!tryOpen || e.button > 0) return;
-    unlockSound(); tryStage.setPointerCapture(e.pointerId);
-    drag = { x: tryX, t: performance.now() }; tryEl.classList.add('is-dragging');
-    moveTo(e.clientX / innerWidth * 100, performance.now());
+    e.preventDefault(); unlockSound(); tryStage.setPointerCapture(e.pointerId);
+    drag = true; tryEl.classList.add('is-dragging');
+    aimAt(e.clientX / innerWidth * 100);
   });
-  tryStage.addEventListener('pointermove', function (e) { if (drag) moveTo(e.clientX / innerWidth * 100, performance.now()); });
-  function endDrag() { if (!drag) return; drag = null; tryEl.classList.remove('is-dragging'); scratch(0); }
+  tryStage.addEventListener('pointermove', function (e) { if (drag) aimAt(e.clientX / innerWidth * 100); });
+  function endDrag() { if (!drag) return; drag = null; tryEl.classList.remove('is-dragging'); }
   tryStage.addEventListener('pointerup', endDrag); tryStage.addEventListener('pointercancel', endDrag);
   trySplit.addEventListener('keydown', function (e) {
     var step = e.shiftKey ? 10 : 3;
-    if (e.key === 'ArrowLeft' || e.key === 'ArrowRight') {
-      e.preventDefault(); e.stopPropagation();
-      drag = { x: tryX, t: performance.now() - 60 }; moveTo(tryX + (e.key === 'ArrowRight' ? step : -step), performance.now()); drag = null;
-    }
+    if (e.key === 'ArrowLeft' || e.key === 'ArrowRight') { e.preventDefault(); e.stopPropagation(); aimAt(tryT + (e.key === 'ArrowRight' ? step : -step)); }
   });
 
   // a little demo when the page opens: the cut swings left and right once, then rests in the middle
   function demoSwing() {
-    var keys = [[0, 50], [450, 34], [1000, 64], [1450, 50]], start = performance.now(), prev = 50;
-    drag = { x: 50, t: start };
-    (function step(now) {
-      if (!tryOpen || !drag || tryEl.classList.contains('is-dragging')) return;
-      var e = now - start, k = 1;
-      while (k < keys.length - 1 && e > keys[k][0]) k++;
-      var a = keys[k - 1], b = keys[k], p = Math.min(1, Math.max(0, (e - a[0]) / (b[0] - a[0]))), ease = p < .5 ? 2 * p * p : 1 - Math.pow(-2 * p + 2, 2) / 2;
-      moveTo(a[1] + (b[1] - a[1]) * ease, now);
-      if (e < keys[keys.length - 1][0]) requestAnimationFrame(step); else { drag = null; scratch(0); }
-    })(start);
+    var keys = [[0, 34], [650, 64], [1300, 50]];
+    keys.forEach(function (k) { tryTimers.push(setTimeout(function () { if (tryOpen && !drag) aimAt(k[1]); }, k[0])); });
   }
 
   function openTry() {
@@ -638,7 +634,7 @@
     var src = reelSrc();
     [vBefore, vAfter].forEach(function (v) { if (v.getAttribute('src') !== src) v.src = src; v.currentTime = 0; v.play().catch(function () {}); });
     fxIndex = Math.max(0, CRAFTS.findIndex(function (c) { return String(c.name).toLowerCase() === 'edit'; }));
-    renderChips(fxIndex); setFx(fxIndex, false); setX(50);
+    renderChips(fxIndex); setFx(fxIndex, false); setX(50); tryT = 50; tryV = 0;
     tryEl.hidden = false; tryEl.classList.remove('is-in', 'is-out', 'is-open'); void tryEl.offsetWidth;
     tryEl.classList.add('is-open');                         // the red line drops
     tryTimers.push(setTimeout(function () { tryEl.classList.add('is-in'); tick(1, .6); }, reduce ? 0 : 380));   // …and the film opens out of it
@@ -648,7 +644,7 @@
   }
   function closeTry(instant, then) {
     if (!tryOpen) { if (then) then(); return; }
-    tryOpen = false; drag = null; scratch(0); cancelAnimationFrame(tryRaf); tryTimers.forEach(clearTimeout); tryTimers = [];
+    tryOpen = false; drag = null; scratch(0); cancelAnimationFrame(tryRaf); cancelAnimationFrame(tryMove); tryMove = 0; tryV = 0; tryTimers.forEach(clearTimeout); tryTimers = [];
     var done = function () { tryEl.hidden = true; tryEl.classList.remove('is-in', 'is-out', 'is-open', 'is-dragging'); vBefore.pause(); vAfter.pause(); if (then) then(); };
     if (instant || reduce) return done();
     tryEl.classList.add('is-out'); tick(-1, .5);
@@ -1028,8 +1024,11 @@
   var snHead = hcEl.snip.querySelector('.sn-head'), snA = hcEl.snip.querySelector('.sn-a'), snB = hcEl.snip.querySelector('.sn-b');
   var snSegs = [].slice.call(hcEl.snip.querySelectorAll('.sn-strip i')), SEG = snSegs.length, SL = 28, snPts = [], snCtx = [], snFall = null, snAng = 0;
   snSegs.forEach(function (sg) { var c = document.createElement('canvas'); c.width = 52; c.height = 70; sg.appendChild(c); snCtx.push(c.getContext('2d')); });
+  // the reel is grabbed once into a small canvas ~12 times a second and the strip copies that
+  // (reading a playing video is slow in Safari; 7 reads every frame made Snip stutter)
+  var snSrc = document.createElement('canvas'); snSrc.width = 70; snSrc.height = 52; var snSrcCtx = snSrc.getContext('2d'), snGrab = 0;
   function snReset() {
-    snPts = []; snFall = null; snAng = 4;
+    snPts = []; snFall = null; snAng = 4; snGrab = 0;
     for (var i = 0; i <= SEG; i++) snPts.push({ x: hx, y: hy - 4 + i * 2, ox: hx, oy: hy - 4 + i * 2 });
   }
   function snStep() {                  // one 60fps physics step
@@ -1051,7 +1050,10 @@
       var p0 = snPts[i], p1 = snPts[i + 1];
       snSegs[i].style.transform = 'translate(' + ((p0.x + p1.x) / 2).toFixed(1) + 'px,' + ((p0.y + p1.y) / 2).toFixed(1) + 'px) rotate(' + (Math.atan2(p1.y - p0.y, p1.x - p0.x) * 57.2958).toFixed(1) + 'deg)';
     }
-    if ((frN++ & 1) === 0 && reelReady()) snCtx.forEach(function (ctx) { ctx.setTransform(0, -1, 1, 0, 0, 70); coverDraw(ctx, reel, 70, 52); });   // the strip plays the reel
+    if (now - snGrab > 80 && reelReady()) {                       // the strip plays the reel
+      snGrab = now; coverDraw(snSrcCtx, reel, 70, 52);
+      snCtx.forEach(function (ctx) { ctx.setTransform(0, -1, 1, 0, 0, 70); ctx.drawImage(snSrc, 0, 0); });
+    }
   }
   function snFire() {
     sfx('snip');

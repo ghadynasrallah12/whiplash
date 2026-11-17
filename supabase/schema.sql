@@ -40,6 +40,8 @@ create table if not exists public.categories (
   name     text not null,
   position int  not null default 0
 );
+-- a folder can be shown in Whiplash red instead of Finder blue (e.g. Awards)
+alter table public.categories add column if not exists is_red boolean not null default false;
 
 create table if not exists public.projects (
   id          uuid primary key default gen_random_uuid(),

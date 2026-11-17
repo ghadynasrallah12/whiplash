@@ -32,7 +32,7 @@
   function el(tag, cls, text) { var e = document.createElement(tag); if (cls) e.className = cls; if (text != null) e.textContent = text; return e; }
   function svg(html, cls) { var s = document.createElementNS('http://www.w3.org/2000/svg', 'svg'); if (cls) s.setAttribute('class', cls); s.innerHTML = html; return s; }
   var MARK = '<path d="M0 0H21.2V82A21.2 21.2 0 0 1 0 60.8Z"/><path d="M42.7 0H63.9V60.6A21.4 21.4 0 0 0 85.3 82H106.6V100H39.3A18 18 0 0 1 21.3 82A21.4 21.4 0 0 0 42.7 60.6Z"/><path d="M85.4 0H106.6V60.6H93.4A8 8 0 0 1 85.4 52.6Z"/>';
-  var FOLDER = '<path d="M0 7a7 7 0 0 1 7-7h25.5a5 5 0 0 1 3.6 1.5L42 8h51a7 7 0 0 1 7 7v56a7 7 0 0 1-7 7H7a7 7 0 0 1-7-7z" fill="#4d84de"/><rect y="17" width="100" height="61" rx="7" fill="#75a3ec"/><rect y="17" width="100" height="2.2" fill="#a9c6f6" opacity=".9"/>';
+  var FOLDER = '<path d="M0 7a7 7 0 0 1 7-7h25.5a5 5 0 0 1 3.6 1.5L42 8h51a7 7 0 0 1 7 7v56a7 7 0 0 1-7 7H7a7 7 0 0 1-7-7z" style="fill:var(--f-back,#4d84de)"/><rect y="17" width="100" height="61" rx="7" style="fill:var(--f-front,#75a3ec)"/><rect y="17" width="100" height="2.2" style="fill:var(--f-edge,#a9c6f6)" opacity=".9"/>';   // colours from CSS: .is-red turns it Whiplash red
   var X = '<path d="M2 2l6 6M8 2l-6 6"/>', MIN = '<path d="M1.5 5h7"/>', MAX = '<path d="M2 2h3M2 2v3M8 8H5M8 8V5"/>';
   function icon(name, cls) {
     var b = el('button', 'ficon' + (cls ? ' ' + cls : '')); b.type = 'button';
@@ -181,7 +181,7 @@
     rootCount.textContent = cats.length + (cats.length === 1 ? ' folder' : ' folders');
     if (!cats.length) { rootGrid.appendChild(el('p', 'root__empty', 'No folders yet.')); return; }
     cats.forEach(function (c) {
-      var b = icon(c.name); folderIcons[c.id] = b;
+      var b = icon(c.name, c.is_red ? 'is-red' : ''); folderIcons[c.id] = b;
       clickable(b, function () { deselect(rootGrid); b.classList.add('is-sel'); tick(1, .25); }, function () { openFolder(c.id, b); });
       rootGrid.appendChild(b);
     });
@@ -200,7 +200,7 @@
     all.setAttribute('aria-current', String(current === 'all')); all.addEventListener('click', function () { go('all'); }); side.appendChild(all);
     side.appendChild(el('h4', '', 'Folders'));
     CATS.forEach(function (c) {
-      var b = el('button'); b.type = 'button'; b.appendChild(svg(FOLDER)); b.firstChild.setAttribute('viewBox', '0 0 100 78'); b.appendChild(document.createTextNode(c.name));
+      var b = el('button', c.is_red ? 'is-red' : ''); b.type = 'button'; b.appendChild(svg(FOLDER)); b.firstChild.setAttribute('viewBox', '0 0 100 78'); b.appendChild(document.createTextNode(c.name));
       b.setAttribute('aria-current', String(current === c.id)); b.addEventListener('click', function () { go(c.id); });
       side.appendChild(b);
     });
@@ -389,7 +389,7 @@
 
   // ---------- content from the dashboard ----------
   if (WL.live && WL.rest) {
-    Promise.all([WL.rest('categories?select=id,name&order=position'), WL.rest('projects?select=*&order=position')]).then(function (r) {
+    Promise.all([WL.rest('categories?select=*&order=position'), WL.rest('projects?select=*&order=position')]).then(function (r) {
       // use the dashboard once it has projects (until then the built-in ones keep the folders full)
       if (!r[1].length) return;
       CATS = r[0];

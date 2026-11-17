@@ -44,7 +44,12 @@
     document.getElementById('toasts').append(t);
     setTimeout(() => t.remove(), err ? 5200 : 2600);
   }
-  const fail = (e) => { console.error(e); toast((e && e.message) || 'Something went wrong. Try again.', true); };
+  const fail = (e) => {
+    console.error(e);
+    const m = (e && e.message) || '';
+    if (/is_red/.test(m)) return toast('Red folders need a one-time database update: run supabase/schema.sql in Supabase (SQL Editor).', true);
+    toast(m || 'Something went wrong. Try again.', true);
+  };
 
   function confirmBox({ title, body, yes, danger }) {
     return new Promise((resolve) => {
@@ -378,6 +383,10 @@
     (p.credits || []).forEach((c) => addCredit(c[0], c[1]));
     const published = toggle(p.published, 'Show on the site', 'Turn off to keep it as a draft.');
     const hero = toggle(p.is_hero, 'Homepage film', 'Its preview clip plays behind the homepage. Only one project can have this.');
+    const catOf = () => S.categories.find((c) => c.id === cat.value);
+    const redFolder = toggle(catOf() && catOf().is_red, 'Red folder', 'Shows this project\'s folder in Whiplash red on the Projects page, for every project in it.');
+    const paintRed = () => { const c = catOf(); redFolder.hidden = !c; if (c) { redFolder.input.checked = !!c.is_red; redFolder.querySelector('b').textContent = 'Make "' + c.name + '" a red folder'; } };
+    cat.addEventListener('change', paintRed); paintRed();
 
     openSheet({
       title: isNew ? 'New project' : 'Edit project',
@@ -388,7 +397,7 @@
           h('div', { class: 'group' }, h('h3', null, 'Film'), thumb, clip, h('div', { class: 'field' }, h('label', { for: 'film' }, 'Full film link'), Object.assign(film, { id: 'film' }), hostNote)),
           h('div', { class: 'group' }, h('h3', null, 'Credits'), credits, h('div', null, h('button', { class: 'btn btn--sm', type: 'button', onclick: () => addCredit().querySelector('input').focus() }, 'Add credit'))),
           h('div', { class: 'group' }, h('h3', null, 'Extras'), h('div', { class: 'row2' }, logo, award)),
-          h('div', { class: 'group' }, published, hero));
+          h('div', { class: 'group' }, published, hero, redFolder));
       },
       footer(foot, ctl) {
         const save = h('button', { class: 'btn btn--red', onclick: async () => {
@@ -401,6 +410,8 @@
               credits: [...credits.children].map((r) => [...r.querySelectorAll('input')].map((i) => i.value.trim())).filter((c) => c[0] || c[1]), is_hero: hero.input.checked, published: published.input.checked };
             if (isNew) row.position = S.projects.length + 1;
             if (row.is_hero) for (const o of S.projects.filter((x) => x.is_hero && x.id !== p.id)) { await api.patch('projects', o.id, { is_hero: false }); o.is_hero = false; }
+            const fc = catOf();
+            if (fc && !!fc.is_red !== redFolder.input.checked) { await api.patch('categories', fc.id, { is_red: redFolder.input.checked }); fc.is_red = redFolder.input.checked; }
             const saved = await api.save('projects', row);
             if (isNew) S.projects.push(saved); else S.projects = S.projects.map((x) => (x.id === saved.id ? saved : x));
             ctl.clean(); ctl.close(); render(); toast(isNew ? 'Project added' : 'Project saved');
@@ -424,7 +435,9 @@
           wrap.replaceChildren(...cats.map((c, i) => {
             const inp = h('input', { type: 'text', value: c.name, 'aria-label': 'Category name', onchange: async () => { const v = inp.value.trim(); if (!v) { inp.value = c.name; return; } c.name = v; try { await api.patch('categories', c.id, { name: v }); toast('Renamed'); render(); } catch (e) { fail(e); } } });
             const move = async (d) => { const ids = cats.map((x) => x.id); ids.splice(i + d, 0, ids.splice(i, 1)[0]); ids.forEach((id, k) => { S.categories.find((x) => x.id === id).position = k + 1; }); paint(); render(); try { await api.reorder('categories', ids); } catch (e) { fail(e); } };
-            return h('div', { class: 'catrow' }, inp,
+            const red = toggle(c.is_red, 'Red', '', async (on) => { const was = !!c.is_red; c.is_red = on; try { await api.patch('categories', c.id, { is_red: on }); toast(on ? '"' + c.name + '" is red now' : '"' + c.name + '" is back to blue'); render(); } catch (e) { c.is_red = was; red.input.checked = was; fail(e); } });
+            red.classList.add('switch--sm'); red.title = 'Show this folder in Whiplash red on the Projects page';
+            return h('div', { class: 'catrow' }, inp, red,
               h('button', { class: 'icon-btn', 'aria-label': 'Move up', html: ICON.up, disabled: i === 0, onclick: () => move(-1) }),
               h('button', { class: 'icon-btn', 'aria-label': 'Move down', html: ICON.down, disabled: i === cats.length - 1, onclick: () => move(1) }),
               h('button', { class: 'icon-btn', 'aria-label': 'Delete category', html: ICON.x, onclick: async () => {
@@ -437,7 +450,7 @@
         paint();
         const add = h('input', { class: 'input', type: 'text', placeholder: 'New category name', 'aria-label': 'New category name', onkeydown: (e) => { if (e.key === 'Enter') go(); } });
         const go = async () => { const v = add.value.trim(); if (!v) return add.focus(); try { S.categories.push(await api.save('categories', { name: v, position: S.categories.length + 1 })); add.value = ''; paint(); render(); toast('Category added'); } catch (e) { fail(e); } };
-        body.append(h('p', { class: 'note' }, 'Each category is a folder on the Projects page, in this order. Changes save as you make them.'), wrap,
+        body.append(h('p', { class: 'note' }, 'Each category is a folder on the Projects page, in this order. Switch on Red for a folder that should stand out, like Awards. Changes save as you make them.'), wrap,
           h('div', { style: 'display:flex;gap:8px' }, add, h('button', { class: 'btn', onclick: go }, 'Add')));
         body.addEventListener('input', (e) => e.stopPropagation());   // saves instantly, so never "unsaved"
       },
