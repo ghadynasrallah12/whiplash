@@ -225,6 +225,8 @@ body:not([data-scene=home]):not([data-scene=about]):not(.is-opening) .logo { opa
 .city { cursor: pointer; outline: none; }
 .city__mark { fill: var(--page-red); }
 .city text { font-size: 26px; font-weight: 700; text-transform: uppercase; fill: #0a0a0c; letter-spacing: .01em; }
+/* a thin backing in the land's colour, so a name that runs past the coast (Dubai) still reads, red included */
+.city text { paint-order: stroke fill; stroke: #f0f0f5; stroke-width: 12px; stroke-linejoin: round; }
 .city > * { opacity: 0; transition: opacity .3s; }
 .city .city__mark { transform-box: fill-box; }
 .city.is-on > * { opacity: 1; }
