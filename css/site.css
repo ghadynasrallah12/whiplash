@@ -81,7 +81,7 @@ button { font: inherit; color: inherit; background: none; border: 0; padding: 0;
 /* ---------- [02] About ----------
    Opens from the logo: the logo grows until its red fills the screen, and this red page
    spreads out of it (a circle from the centre). Closing runs the same thing backwards. */
-:root { --page-red: #ab231b;   /* = the 3D logo's lit red, so the flood hands over without a colour change */ --ax: 5.7vw; --row: min(6.75vw, 12.2vh); }
+:root { --page-red: #ab231b;   /* = the 3D logo's lit red, so the flood hands over without a colour change */ --ax: 5.7vw; --row: min(6.75vw, 12.2vh); --pitch: calc(var(--row) * 1.32); }   /* --pitch: one chapter line plus the air between lines */
 .nav { z-index: 6; transition: left .7s cubic-bezier(.6, 0, .2, 1), right .7s cubic-bezier(.6, 0, .2, 1), color .3s; }
 body[data-scene=about] .nav { left: var(--ax); right: 6vw; color: #0a0a0c; }
 body[data-scene=about] .nav a:hover, body[data-scene=about] .nav a[aria-current=page] { color: #fff; }
@@ -100,8 +100,9 @@ body:not([data-scene=home]):not([data-scene=about]):not(.is-opening) .logo { opa
 .about.is-detail 
 /* chapters: three rows show; the list slides when you go past them */
 .about__list { position: absolute; inset: 0; }
-.chapters { position: absolute; left: var(--ax); top: 15.6vh; height: calc(var(--row) * 3); width: 62vw; overflow: hidden; }
+.chapters { position: absolute; left: var(--ax); top: calc(15.6vh - (var(--pitch) - var(--row)) / 2); height: calc(var(--pitch) * 3); width: 62vw; overflow: hidden; }
 .chapters__track { transition: transform .6s cubic-bezier(.6, 0, .2, 1); }
+.chapters .ch { height: var(--pitch); }   /* the first word stays where it was; the others move down a little */
 .ch { display: flex; align-items: center; height: var(--row); width: 100%; text-align: left; color: #0a0a0c; transition: color .2s; }
 .ch__n { width: 5vw; flex: none; font-size: clamp(11px, 1vw, 24px); letter-spacing: .02em; }
 .ch__t { display: block; overflow: hidden; height: var(--row); pointer-events: none; }

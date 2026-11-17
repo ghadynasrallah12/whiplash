@@ -154,8 +154,10 @@
   var ac = null;
   function unlockSound() { try { ac = ac || new (window.AudioContext || window.webkitAudioContext)(); if (ac.state !== 'running') ac.resume(); } catch (e) { /* no audio */ } }
   ['pointerdown', 'keydown', 'touchend'].forEach(function (ev) { document.addEventListener(ev, unlockSound, { passive: true }); });
+  var pageReady = document.readyState === 'complete';
+  window.addEventListener('load', function () { setTimeout(function () { pageReady = true; }, 300); });
   function tick(dir, vol) {
-    if (reduce || !ac || !soundOn) return;   // sound switched off = no hover sounds either
+    if (reduce || !ac || !soundOn || !pageReady) return;   // sound switched off = no hover sounds either; none while the page is still loading
     try {
       if (ac.state !== 'running') { ac.resume(); return; }
       var t = ac.currentTime + .01, j = .9 + Math.random() * .2;
@@ -296,7 +298,7 @@
       var n = document.createElement('span'); n.className = 'ch__n'; n.textContent = '[' + two(i + 1) + ']';
       var t = document.createElement('span'); t.className = 'ch__t'; var w = document.createElement('span'); w.textContent = c.title; t.appendChild(w);
       b.appendChild(n); b.appendChild(t);
-      b.addEventListener('pointerenter', function (e) { if (e.pointerType !== 'mouse') return; b.classList.add('is-hover'); setChapter(i); chapterFx(i); });
+      b.addEventListener('pointerenter', function (e) { if (e.pointerType !== 'mouse' || !about.classList.contains('is-settled')) return; b.classList.add('is-hover'); setChapter(i); chapterFx(i); });   // nothing until the page has fully come in
       b.addEventListener('pointerleave', function () { b.classList.remove('is-hover'); });
       b.addEventListener('click', function (e) {
         if (pageOf(i)) return openDetail(i);
@@ -316,7 +318,7 @@
     for (var k = 0; k < rows.length; k++) rows[k].setAttribute('aria-selected', String(k === i));
     // three rows are visible: slide only when the picked one would fall outside them
     var first = Math.max(0, Math.min(CHAPTERS.length - 3, i - 2));
-    chTrack.style.transform = 'translateY(calc(var(--row) * ' + -first + '))';
+    chTrack.style.transform = 'translateY(calc(var(--pitch) * ' + -first + '))';
     if (same) return;
     var fill = function () {
       chImg.src = c.image_url || ''; chImg.alt = c.title; chImg.style.visibility = c.image_url ? '' : 'hidden';
@@ -683,7 +685,7 @@
     for (var k = 0; k < chTrack.children.length; k++) chTrack.children[k].classList.toggle('is-picked', stays && k === i);
     chTrack.children[i].classList.remove('is-hover');
     var word = chTrack.children[i].querySelector('.ch__t > span'); clearInterval(scTimers.get(word)); word.textContent = CHAPTERS[i].title;   // stop any letter shuffle mid-way
-    if (stays) chTrack.style.transform = 'translateY(calc(var(--row) * ' + -i + '))';     // the picked word rides up to the first row
+    if (stays) chTrack.style.transform = 'translateY(calc(var(--pitch) * ' + -i + '))';     // the picked word rides up to the first row
     about.classList.add('is-detail');
     tick(1, .6);
     later(function () { showPage(i); }, reduce ? 0 : 620);
