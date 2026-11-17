@@ -29,7 +29,14 @@ const canvas = document.getElementById('logo');
 
 // ---------- Renderer -------------------------------------
 const renderer = new THREE.WebGLRenderer({ canvas, alpha: true, antialias: true, powerPreference: 'high-performance' });
-renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+// Safari draws WebGL more slowly; on a big Retina screen it would be filling ~6M pixels a frame.
+// There the canvas gets a pixel budget instead (still sharp, far less work).
+const isSafari = /^((?!chrome|chromium|crios|fxios|edg|android).)*safari/i.test(navigator.userAgent);
+function pixelRatio(w, h) {
+  const r = Math.min(window.devicePixelRatio || 1, 2);
+  return isSafari ? Math.min(r, Math.max(1, Math.sqrt(2.6e6 / (w * h)))) : r;
+}
+renderer.setPixelRatio(pixelRatio(window.innerWidth, window.innerHeight));
 renderer.setClearColor(0x000000, 0);
 renderer.toneMapping = THREE.NoToneMapping;
 renderer.outputColorSpace = THREE.SRGBColorSpace;
@@ -177,6 +184,7 @@ window.WHIPLASH_LOGO = {
 // ---------- Sizing -----------------------------------------
 function resize() {
   const w = window.innerWidth, h = window.innerHeight;
+  renderer.setPixelRatio(pixelRatio(w, h));
   renderer.setSize(w, h, false);
   camera.aspect = w / h;
   camera.updateProjectionMatrix();

@@ -797,10 +797,17 @@
     if (e.pointerType === 'touch') return;
     mx = e.clientX; my = e.clientY;
     if (!seen) { seen = true; rx = mx; ry = my; ring.classList.add('is-on'); }
-    ring.classList.toggle('is-big', !!e.target.closest('a,button'));
+    var big = !!e.target.closest('a,button'); if (big !== ringBig) { ringBig = big; ring.classList.toggle('is-big', big); }
+    if (!ringRaf) ringRaf = requestAnimationFrame(follow);
   }, { passive: true });
   document.addEventListener('pointerleave', function () { ring.classList.remove('is-on'); seen = false; });
-  (function follow() { rx += (mx - rx) * 0.14; ry += (my - ry) * 0.14; ring.style.transform = 'translate(' + rx + 'px,' + ry + 'px)'; requestAnimationFrame(follow); })();
+  // follows with a little lag; stops working once it has caught up
+  var ringBig = false, ringRaf = 0;
+  function follow() {
+    rx += (mx - rx) * 0.14; ry += (my - ry) * 0.14;
+    ring.style.transform = 'translate3d(' + rx.toFixed(1) + 'px,' + ry.toFixed(1) + 'px,0)';
+    ringRaf = Math.abs(mx - rx) + Math.abs(my - ry) > .3 ? requestAnimationFrame(follow) : 0;
+  }
 
   // ---------- content from the dashboard ----------
   function rest(path) {
@@ -1191,6 +1198,7 @@
     theater = true; unlockSound();
     body.classList.add('is-theater');
     LOGO().setMode('hidden');                                   // the logo shrinks away into the film
+    setTimeout(function () { if (theater) drawLogo(false); }, 700);   // gone from view: stop drawing it
     reel.muted = !soundOn; reel.play().catch(function () { reel.muted = true; reel.play().catch(function () {}); });
     thMute.textContent = reel.muted ? 'Sound off' : 'Sound on';
     [].forEach.call(frame.querySelectorAll('.theater button'), function (b) { b.tabIndex = 0; });
@@ -1205,7 +1213,7 @@
     if (instant) body.classList.add('no-trans');
     body.classList.remove('is-theater');
     if (instant) { void body.offsetWidth; body.classList.remove('no-trans'); }
-    if (SCENES[current] === 'home') LOGO().setMode('home');
+    if (SCENES[current] === 'home') { drawLogo(true); LOGO().setMode('home'); }
     applySound(); if (reel.paused) reel.play().catch(function () {});
     [].forEach.call(frame.querySelectorAll('.theater button'), function (b) { b.tabIndex = -1; });
     frame.querySelector('.theater').setAttribute('aria-hidden', 'true');
