@@ -954,33 +954,237 @@
   });
 
   // ---------- Homepage reel: hover cursor + full-screen player ----------
+  // Hovering the reel turns the cursor into a film-cutting tool; clicking cuts and opens the reel full screen.
+  // Four styles to compare for now (picker under the frame, remembered in this browser, or ?cursor=razor):
+  //   snip   - scissors with a strip of the reel hanging from the blades; click snips it into falling frames
+  //   razor  - an edit playhead with the timecode; click slices the frame there and the film starts from that point
+  //   slate  - a clapperboard that sways as you move; click claps it shut with a flash
+  //   finder - camera brackets that pull focus as you move; click throws them out to the full-screen frame
   var frame = document.querySelector('.frame'), rc = document.querySelector('.reelcur');
   var theater = false, rcx = 0, rcy = 0, rcMx = 0, rcMy = 0, rcOn = false, rcRaf = 0;
   var thTime = document.getElementById('th-time'), thDur = document.getElementById('th-dur'), thFill = document.getElementById('th-fill'), thTrack = document.getElementById('th-track'), thMute = document.getElementById('th-mute');
   function mmss(t) { t = Math.max(0, t || 0); return two(Math.floor(t / 60)) + ':' + two(Math.floor(t % 60)); }
-  function rcLoop() {
-    rcx += (rcMx - rcx) * .2; rcy += (rcMy - rcy) * .2;
-    rc.style.transform = 'translate(' + rcx.toFixed(1) + 'px,' + rcy.toFixed(1) + 'px)';
-    if (theater) { thTime.textContent = mmss(reel.currentTime); thDur.textContent = mmss(reel.duration); thFill.style.width = (reel.duration ? reel.currentTime / reel.duration * 100 : 0) + '%'; }
-    rcRaf = (rcOn || theater) ? requestAnimationFrame(rcLoop) : 0;
+  var hc = document.getElementById('hcur'), pick = document.getElementById('curpick');
+  var CURS = ['snip', 'razor', 'slate', 'finder'], curV = 'snip';
+  try { var savedCur = localStorage.getItem('whiplash-reelcur'); if (CURS.indexOf(savedCur) > -1) curV = savedCur; } catch (e) { /* private mode */ }
+  var qCur = (location.search.match(/[?&]cursor=(\w+)/) || [])[1]; if (CURS.indexOf(qCur) > -1) curV = qCur;
+  function setCur(v, save) {
+    curV = v; hc.dataset.v = v;
+    [].forEach.call(pick.querySelectorAll('button'), function (b) { b.setAttribute('aria-pressed', String(b.dataset.v === v)); });
+    if (save) try { localStorage.setItem('whiplash-reelcur', v); } catch (e) { /* private mode */ }
   }
-  function reelHoverable() { return SCENES[current] === 'home' && !locked && !body.classList.contains('is-cutting'); }
-  function setRc(on, e) {
-    if (e) { rcMx = e.clientX; rcMy = e.clientY; if (!rcOn && on) { rcx = rcMx; rcy = rcMy; } }
-    rcOn = on; rc.classList.toggle('is-on', on); body.classList.toggle('reel-hover', on);
-    rc.classList.toggle('is-small', theater); rc.classList.toggle('is-pause', theater && !reel.paused);
+  setCur(curV);
+  pick.addEventListener('click', function (e) { var b = e.target.closest('button'); if (b) { setCur(b.dataset.v, true); tick(1, .4); } });
+  var hcEl = {}; CURS.forEach(function (v) { hcEl[v] = hc.querySelector('.hc--' + v); });
+  var hcOn = false, hcBusy = false, hx = 0, hy = 0, hSpeed = 0, hSway = 0, frN = 0, frRect = null;
+  function coverDraw(ctx, v, w, h) { var k = Math.max(w / v.videoWidth, h / v.videoHeight), dw = v.videoWidth * k, dh = v.videoHeight * k; ctx.drawImage(v, (w - dw) / 2, (h - dh) / 2, dw, dh); }
+  function reelReady() { return reel.readyState >= 2 && reel.videoWidth > 0; }
+
+  // film sounds, synthesised like the rest
+  var nBuf = null;
+  function sfx(kind) {
+    if (reduce || !ac || !soundOn) return;
+    try {
+      if (ac.state !== 'running') ac.resume();
+      if (!nBuf) { nBuf = ac.createBuffer(1, ac.sampleRate * .5, ac.sampleRate); var d = nBuf.getChannelData(0); for (var i = 0; i < d.length; i++) d[i] = Math.random() * 2 - 1; }
+      var t = ac.currentTime + .01;
+      var burst = function (at, dur, type, f, q, vol) {
+        var src = ac.createBufferSource(), fl = ac.createBiquadFilter(), g = ac.createGain();
+        src.buffer = nBuf; fl.type = type; fl.frequency.value = f; fl.Q.value = q;
+        g.gain.setValueAtTime(vol, at); g.gain.exponentialRampToValueAtTime(.0001, at + dur);
+        src.connect(fl).connect(g).connect(ac.destination); src.start(at, Math.random() * .3); src.stop(at + dur + .02); return fl;
+      };
+      var tone = function (at, f1, f2, dur, vol, type) {
+        var o = ac.createOscillator(), g = ac.createGain(); o.type = type || 'sine';
+        o.frequency.setValueAtTime(f1, at); o.frequency.exponentialRampToValueAtTime(f2, at + dur);
+        g.gain.setValueAtTime(.0001, at); g.gain.exponentialRampToValueAtTime(vol, at + .004); g.gain.exponentialRampToValueAtTime(.0001, at + dur);
+        o.connect(g).connect(ac.destination); o.start(at); o.stop(at + dur + .02);
+      };
+      if (kind === 'snip') {          // two blades meeting: a crisp metallic schick-schick
+        burst(t, .035, 'highpass', 5200, .8, .45); tone(t, 3600, 2500, .05, .08, 'triangle');
+        burst(t + .06, .05, 'bandpass', 4300, 2, .55); tone(t + .06, 3000, 2100, .07, .07, 'triangle'); tone(t + .06, 160, 70, .1, .3);
+      } else if (kind === 'slice') {  // a blade through film, then the cut lands
+        var f = burst(t, .17, 'bandpass', 2200, 1.3, .4); f.frequency.exponentialRampToValueAtTime(9500, t + .15);
+        tone(t + .12, 120, 48, .25, .55); burst(t + .12, .03, 'highpass', 4000, .7, .3);
+      } else if (kind === 'clack') {  // the clapper shutting
+        burst(t, .06, 'bandpass', 1700, 1.4, .95); burst(t, .015, 'highpass', 6000, .7, .55); tone(t, 150, 60, .14, .6);
+      } else if (kind === 'shutter') {// camera shutter: open, close
+        burst(t, .025, 'bandpass', 3600, 1.6, .55); tone(t, 1300, 700, .03, .07, 'square');
+        burst(t + .085, .04, 'bandpass', 2400, 1.6, .5); tone(t + .085, 95, 50, .12, .35);
+      } else if (kind === 'open') {   // hover in: a soft little slide
+        var o2 = burst(t, .09, 'bandpass', 900, 2, .12); o2.frequency.exponentialRampToValueAtTime(2600, t + .08);
+      }
+    } catch (e) { /* no audio */ }
+  }
+
+  // Snip
+  var snHead = hcEl.snip.querySelector('.sn-head'), snA = hcEl.snip.querySelector('.sn-a'), snB = hcEl.snip.querySelector('.sn-b');
+  var snSegs = [].slice.call(hcEl.snip.querySelectorAll('.sn-strip i')), SEG = snSegs.length, SL = 28, snPts = [], snCtx = [], snFall = null, snAng = 0;
+  snSegs.forEach(function (sg) { var c = document.createElement('canvas'); c.width = 52; c.height = 70; sg.appendChild(c); snCtx.push(c.getContext('2d')); });
+  function snReset() {
+    snPts = []; snFall = null; snAng = 4;
+    for (var i = 0; i <= SEG; i++) snPts.push({ x: hx, y: hy - 4 + i * 2, ox: hx, oy: hy - 4 + i * 2 });
+  }
+  function snStep() {                  // one 60fps physics step
+    var i;
+    if (snFall) { snFall.forEach(function (f) { f.vy += .55; f.x += f.vx; f.y += f.vy; f.a += f.va; }); return; }
+    snPts[0].x = hx; snPts[0].y = hy - 5;
+    for (i = 1; i <= SEG; i++) { var p = snPts[i], vx = (p.x - p.ox) * .9, vy = (p.y - p.oy) * .9; p.ox = p.x; p.oy = p.y; p.x += vx; p.y += vy + .9; }
+    for (var it = 0; it < 3; it++) for (i = 1; i <= SEG; i++) {   // a rope: each frame at most one frame-length from the one above
+      var a = snPts[i - 1], b = snPts[i], dx = b.x - a.x, dy = b.y - a.y, dd = Math.hypot(dx, dy) || 1;
+      if (dd > SL) { b.x = a.x + dx / dd * SL; b.y = a.y + dy / dd * SL; }
+    }
+  }
+  function snFrame(now) {
+    snAng += ((hcBusy ? -1.5 : 16 + 3 * Math.sin(now / 240)) - snAng) * (hcBusy ? .55 : .2);
+    snA.setAttribute('transform', 'rotate(' + snAng.toFixed(2) + ' 38 20)'); snB.setAttribute('transform', 'rotate(' + (-snAng).toFixed(2) + ' 38 20)');
+    snHead.style.transform = 'translate(' + (hx - 30).toFixed(1) + 'px,' + (hy - 25).toFixed(1) + 'px) rotate(' + Math.max(-14, Math.min(14, hSway * 1.4)).toFixed(1) + 'deg)';
+    if (snFall) { snFall.forEach(function (f, k) { snSegs[k].style.transform = 'translate(' + f.x.toFixed(1) + 'px,' + f.y.toFixed(1) + 'px) rotate(' + f.a.toFixed(1) + 'deg)'; }); return; }
+    for (var i = 0; i < SEG; i++) {
+      var p0 = snPts[i], p1 = snPts[i + 1];
+      snSegs[i].style.transform = 'translate(' + ((p0.x + p1.x) / 2).toFixed(1) + 'px,' + ((p0.y + p1.y) / 2).toFixed(1) + 'px) rotate(' + (Math.atan2(p1.y - p0.y, p1.x - p0.x) * 57.2958).toFixed(1) + 'deg)';
+    }
+    if ((frN++ & 1) === 0 && reelReady()) snCtx.forEach(function (ctx) { ctx.setTransform(0, -1, 1, 0, 0, 70); coverDraw(ctx, reel, 70, 52); });   // the strip plays the reel
+  }
+  function snFire() {
+    sfx('snip');
+    setTimeout(function () {
+      snFall = snSegs.map(function (sg, k) {
+        var p0 = snPts[k], p1 = snPts[k + 1];
+        return { x: (p0.x + p1.x) / 2, y: (p0.y + p1.y) / 2, a: Math.atan2(p1.y - p0.y, p1.x - p0.x) * 57.2958, vx: (p1.x - p1.ox) * .6 + (Math.random() - .5) * 4, vy: -1.5 - Math.random() * 2.5 + k * .25, va: (Math.random() - .5) * 16 };
+      });
+      hcEl.snip.classList.add('is-cut');
+    }, 70);
+    return 240;
+  }
+
+  // Razor
+  var rzLine = hcEl.razor.querySelector('.rz-line'), rzTag = hcEl.razor.querySelector('.rz-tag'), rzTc = hcEl.razor.querySelector('.rz-tc'), rzAt = 0;
+  function reelLen() { return reel.duration && isFinite(reel.duration) ? reel.duration : 0; }
+  function rzFrame() {
+    if (hcBusy || !frRect) return;
+    var r = frRect, x = Math.max(r.left, Math.min(r.right - 1, rcMx)), f = (x - r.left) / r.width;
+    rzLine.style.transform = 'translate(' + x.toFixed(1) + 'px,' + r.top.toFixed(1) + 'px)'; rzLine.style.height = r.height + 'px';
+    var w = rzTag.offsetWidth, flip = x + w + 20 > r.right;
+    rzTag.style.transform = 'translate(' + (flip ? x - w : x).toFixed(1) + 'px,' + Math.max(r.top + 12, Math.min(r.bottom - 34, hy - 11)).toFixed(1) + 'px)';
+    var tt = f * (reelLen() || 60), ss = Math.floor(tt);
+    rzAt = f; rzTc.textContent = '00:' + two(Math.floor(ss / 60)) + ':' + two(ss % 60) + ':' + two(Math.floor((tt % 1) * 25));
+  }
+  function rzFire() {
+    var r = frame.getBoundingClientRect(), fx = Math.max(0, Math.min(r.width, rcMx - r.left));
+    sfx('slice'); hcEl.razor.classList.add('is-cut');
+    var seam = document.createElement('i'); seam.className = 'rz-seam'; seam.style.left = fx + 'px'; frame.appendChild(seam);
+    setTimeout(function () { seam.remove(); }, 700);
+    if (reelReady()) {                  // two stills of this exact frame, split along the line and pushed apart
+      var dpr = Math.min(2, window.devicePixelRatio || 1), parts = [], filt = getComputedStyle(reel).filter;
+      [0, 1].forEach(function (k) {
+        var c = document.createElement('canvas'); c.className = 'rz-half'; c.width = Math.round(r.width * dpr); c.height = Math.round(r.height * dpr);
+        coverDraw(c.getContext('2d'), reel, c.width, c.height);
+        c.style.filter = filt; c.style.clipPath = k ? 'inset(0 0 0 ' + fx + 'px)' : 'inset(0 ' + (r.width - fx) + 'px 0 0)';
+        frame.insertBefore(c, frame.querySelector('.theater')); parts.push(c);
+      });
+      frame.classList.add('is-split');
+      requestAnimationFrame(function () { requestAnimationFrame(function () { parts[0].style.transform = 'translate(-10px,-4%)'; parts[1].style.transform = 'translate(10px,4%)'; }); });
+      setTimeout(function () { frame.classList.remove('is-split'); parts.forEach(function (c) { c.style.transform = ''; c.style.opacity = '0'; }); }, 340);
+      setTimeout(function () { parts.forEach(function (c) { c.remove(); }); }, 900);
+    }
+    var len = reelLen(); if (len) setTimeout(function () { try { reel.currentTime = rzAt * len; } catch (e) { /* not seekable yet */ } }, 330);   // the film starts where you cut
+    return 340;
+  }
+
+  // Slate
+  var slSvg = hcEl.slate.querySelector('svg'), slStick = hcEl.slate.querySelector('.sl-stick'), slTake = document.getElementById('sl-take'), slAng = 0, take = 0;
+  function slFrame() {
+    var tgt = hcBusy ? 0 : -26 - Math.max(-12, Math.min(12, hSway * 1.8));
+    slAng += (tgt - slAng) * (hcBusy ? .65 : .16);
+    slStick.style.transform = 'rotate(' + slAng.toFixed(1) + 'deg)';
+    if (!hcBusy) hcEl.slate.style.transform = 'translate(' + hx.toFixed(1) + 'px,' + hy.toFixed(1) + 'px) rotate(' + Math.max(-10, Math.min(10, hSway * .7)).toFixed(1) + 'deg)';
+  }
+  function slFire() {
+    setTimeout(function () { sfx('clack'); hcEl.slate.classList.add('is-cut'); var fl = document.createElement('i'); fl.className = 'reel-flash'; frame.appendChild(fl); setTimeout(function () { fl.remove(); }, 520); }, 75);
+    return 190;
+  }
+
+  // Viewfinder
+  var fdW = 92, fdH = 62;
+  function fdPlace(x, y, w, h) { var el = hcEl.finder; el.style.width = w.toFixed(1) + 'px'; el.style.height = h.toFixed(1) + 'px'; el.style.transform = 'translate(' + x.toFixed(1) + 'px,' + y.toFixed(1) + 'px)'; }
+  function fdFrame() {
+    if (hcBusy) return;
+    fdW += (92 + Math.min(80, hSpeed * 4.5) - fdW) * .14; fdH += (62 + Math.min(50, hSpeed * 3) - fdH) * .14;
+    fdPlace(hx - fdW / 2, hy - fdH / 2, fdW, fdH);
+  }
+  function fdFire() {
+    sfx('shutter');
+    var el = hcEl.finder, W = innerWidth, H = innerHeight;
+    el.classList.add('is-fly'); void el.offsetWidth;
+    fdPlace(W * .03, H * .035, W * .94, H * .93);   // where the frame is about to open to
+    setTimeout(function () { el.classList.add('is-cut'); }, 650);
+    return 40;
+  }
+
+  var hLast = 0;
+  function hcFrame(now) {
+    var steps = hLast ? Math.max(1, Math.min(5, Math.round((now - hLast) / 16.7))) : 1; hLast = now;   // same feel at any frame rate
+    for (var st = 0; st < steps; st++) {
+      if (!hcBusy) {
+        var nx = hx + (rcMx - hx) * .3, ny = hy + (rcMy - hy) * .3;
+        hSway += ((nx - hx) - hSway) * .2; hSpeed += (Math.hypot(nx - hx, ny - hy) - hSpeed) * .2; hx = nx; hy = ny;
+      }
+      if (curV === 'snip') snStep();
+    }
+    if (curV === 'snip') snFrame(now); else if (curV === 'razor') rzFrame(); else if (curV === 'slate') slFrame(); else fdFrame();
+  }
+  function setHover(on) {
+    if (hcBusy || on === hcOn) return;
+    if (on) {
+      hx = rcMx; hy = rcMy; hSpeed = 0; hSway = 0; hLast = 0; frRect = frame.getBoundingClientRect();
+      if (curV === 'snip') snReset();
+      if (curV === 'slate') { slTake.textContent = two(++take); slAng = 0; }
+      if (curV === 'finder') { fdW = 170; fdH = 120; }
+      sfx('open');
+    }
+    hcOn = on; hc.classList.toggle('is-on', on); body.classList.toggle('reel-hover', on || rcOn);
     if (on && !rcRaf) rcRaf = requestAnimationFrame(rcLoop);
   }
+  function hcFire() {
+    hcBusy = true; unlockSound();
+    var wait = curV === 'snip' ? snFire() : curV === 'razor' ? rzFire() : curV === 'slate' ? slFire() : fdFire();
+    setTimeout(function () { if (SCENES[current] === 'home') enterTheater(); }, wait);
+    setTimeout(function () {
+      hcBusy = false; hcOn = false; hc.classList.remove('is-on'); snFall = null;
+      CURS.forEach(function (v) { hcEl[v].classList.remove('is-cut', 'is-fly'); });
+      if (theater) { rcx = rcMx; rcy = rcMy; setRc(true); } else body.classList.remove('reel-hover');
+    }, 1150);
+  }
+
+  function rcLoop(now) {
+    rcx += (rcMx - rcx) * .25; rcy += (rcMy - rcy) * .25;
+    rc.style.transform = 'translate(' + rcx.toFixed(1) + 'px,' + rcy.toFixed(1) + 'px)';
+    if (hcOn || hcBusy) hcFrame(now || 0);
+    if (theater) { thTime.textContent = mmss(reel.currentTime); thDur.textContent = mmss(reel.duration); thFill.style.width = (reel.duration ? reel.currentTime / reel.duration * 100 : 0) + '%'; }
+    rcRaf = (rcOn || theater || hcOn || hcBusy) ? requestAnimationFrame(rcLoop) : 0;
+  }
+  function reelHoverable() { return SCENES[current] === 'home' && !locked && !body.classList.contains('is-cutting'); }
+  function setRc(on) {
+    if (on && !rcOn) { rcx = rcMx; rcy = rcMy; }
+    rcOn = on; rc.classList.toggle('is-on', on); body.classList.toggle('reel-hover', on || hcOn);
+    rc.classList.toggle('is-pause', theater && !reel.paused);
+    if (on && !rcRaf) rcRaf = requestAnimationFrame(rcLoop);
+  }
+  window.addEventListener('resize', function () { if (hcOn) frRect = frame.getBoundingClientRect(); });
   frame.addEventListener('pointermove', function (e) {
     if (e.pointerType !== 'mouse') return;
+    rcMx = e.clientX; rcMy = e.clientY;
     var overControls = !!e.target.closest('.theater button, .theater__track');
-    setRc((theater && !overControls) || (!theater && reelHoverable()), e);
+    setRc(theater && !overControls && !hcBusy);
+    setHover(!theater && reelHoverable());
   });
-  frame.addEventListener('pointerleave', function () { setRc(false); });
+  frame.addEventListener('pointerleave', function () { setRc(false); setHover(false); });
   frame.addEventListener('click', function (e) {
     if (e.target.closest('.theater button, .theater__track')) return;
-    if (theater) { if (reel.paused) reel.play().catch(function () {}); else reel.pause(); setRc(true, e); return; }
-    if (reelHoverable()) enterTheater();
+    if (theater) { if (hcBusy) return; if (reel.paused) reel.play().catch(function () {}); else reel.pause(); setRc(true); return; }
+    if (hcBusy || !reelHoverable()) return;
+    if (hcOn) hcFire(); else enterTheater();   // touch: straight in
   });
   function enterTheater() {
     if (theater) return;
@@ -991,7 +1195,7 @@
     thMute.textContent = reel.muted ? 'Sound off' : 'Sound on';
     [].forEach.call(frame.querySelectorAll('.theater button'), function (b) { b.tabIndex = 0; });
     frame.querySelector('.theater').setAttribute('aria-hidden', 'false');
-    rc.classList.add('is-small'); setTimeout(function () { rc.classList.toggle('is-pause', theater && !reel.paused); }, 120); tick(1, .55);
+    setTimeout(function () { rc.classList.toggle('is-pause', theater && !reel.paused); }, 120); tick(1, .55);
     if (!rcRaf) rcRaf = requestAnimationFrame(rcLoop);
     setTimeout(function () { if (theater) document.getElementById('th-close').focus({ preventScroll: true }); }, 900);
   }

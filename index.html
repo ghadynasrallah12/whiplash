@@ -51,6 +51,8 @@
 
     <p class="foot foot--l" data-text="home.tagline">Post-production · Beirut / Dubai / KSA</p>
     <p class="foot foot--r"><span data-text="home.reel_label">Showreel 26</span> <span class="rec"><i></i>Rec <span id="tc">00:00:00:00</span></span></p>
+    <!-- temporary: compare the reel cursors, then keep one -->
+    <div class="curpick" id="curpick" role="group" aria-label="Reel cursor style"><span>Cursor</span><button type="button" data-v="snip">Snip</button><button type="button" data-v="razor">Razor</button><button type="button" data-v="slate">Slate</button><button type="button" data-v="finder">Viewfinder</button></div>
   </div>
 
   <!-- [02] About: a red page the logo floods open. Chapters come from the dashboard (About). -->
@@ -171,13 +173,44 @@
   <!-- 3D logo (turns left/right only) -->
   <canvas id="logo" class="logo" aria-label="Whiplash logo"></canvas>
   <div class="ring" aria-hidden="true"></div>
-  <!-- cursor over the reel: a spinning "play the reel" disc -->
+  <!-- cursor in the full-screen player: a small play / pause disc -->
   <div class="reelcur" aria-hidden="true">
-    <svg viewBox="0 0 120 120"><defs><path id="rc-ring" d="M60 60m-46 0a46 46 0 1 1 92 0a46 46 0 1 1-92 0"/></defs>
-      <circle cx="60" cy="60" r="58" class="reelcur__disc"/>
-      <g class="reelcur__spin"><text><textPath href="#rc-ring" textLength="285">PLAY THE REEL • PLAY THE REEL •</textPath></text></g>
+    <svg viewBox="0 0 120 120">
+      <circle cx="60" cy="60" r="56" class="reelcur__disc"/>
       <path class="reelcur__play" d="M52 46l20 14-20 14z"/><g class="reelcur__pause"><rect x="49" y="47" width="7" height="26"/><rect x="64" y="47" width="7" height="26"/></g>
     </svg>
+  </div>
+  <!-- cursor over the reel: a film-cutting tool. Four styles to compare (picker under the frame). -->
+  <div class="hcur" id="hcur" aria-hidden="true">
+    <div class="hc hc--snip">
+      <div class="sn-strip"><i></i><i></i><i></i><i></i><i></i><i></i><i></i></div>
+      <div class="sn-head">
+        <svg viewBox="0 0 64 40" width="80" height="50">
+          <g class="sn-a"><path d="M40 17.6L3 20l37 1.6z"/><path class="sn-arm" d="M38 20l8.5 6.5"/><circle cx="51" cy="30" r="6"/></g>
+          <g class="sn-b"><path d="M40 18.8L3 20l37 2.6z"/><path class="sn-arm" d="M38 20l8.5-6.5"/><circle cx="51" cy="10" r="6"/></g>
+          <circle class="sn-pin" cx="38" cy="20" r="1.9"/>
+        </svg>
+        <span class="hc-lab">Snip to play</span>
+      </div>
+    </div>
+    <div class="hc hc--razor"><span class="rz-line"></span><span class="rz-tag"><svg viewBox="0 0 16 16" width="13" height="13"><path d="M2 4h12v8H2z M6 7h4v2H6z" fill-rule="evenodd"/></svg><b>Cut in</b><span class="rz-tc">00:00:00:00</span></span></div>
+    <div class="hc hc--slate">
+      <svg viewBox="0 0 100 84" width="100" height="84">
+        <defs>
+          <pattern id="sl1" width="16" height="12" patternUnits="userSpaceOnUse" patternTransform="skewX(-38)"><rect width="16" height="12" fill="#111"/><rect width="8" height="12" fill="#f2f2f2"/></pattern>
+          <pattern id="sl2" width="16" height="12" patternUnits="userSpaceOnUse" patternTransform="skewX(38)"><rect width="16" height="12" fill="#111"/><rect width="8" height="12" fill="#f2f2f2"/></pattern>
+        </defs>
+        <rect class="sl-board" x="2" y="26" width="96" height="56" rx="2.5"/>
+        <rect x="2.75" y="26.75" width="94.5" height="10.5" fill="url(#sl2)"/>
+        <g class="sl-stick"><rect class="sl-bar" x="2" y="13.5" width="96" height="11" fill="url(#sl1)"/></g>
+        <circle class="sl-pin" cx="5.5" cy="25.5" r="2.2"/>
+        <text class="sl-k" x="8" y="48">Scene</text><text class="sl-k" x="40" y="48">Take</text><text class="sl-k" x="72" y="48">Roll</text>
+        <text class="sl-v" x="8" y="59">01</text><text class="sl-v" x="40" y="59" id="sl-take">01</text><text class="sl-v" x="72" y="59">A</text>
+        <line class="sl-ln" x1="2" y1="64" x2="98" y2="64"/>
+        <text class="sl-go" x="8" y="76.5">&#9654; Play the reel</text>
+      </svg>
+    </div>
+    <div class="hc hc--finder"><i></i><i></i><i></i><i></i><span class="fd-rec"><b></b>Rec</span><span class="fd-x"></span><span class="fd-go">Play</span></div>
   </div>
 
   <script src="admin/config.js"></script>

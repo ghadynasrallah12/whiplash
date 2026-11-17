@@ -425,20 +425,90 @@ body.no-trans .frame, body.no-trans .stage > *, body.no-trans .stage::after, bod
    Hover the frame: the cursor becomes a red disc with "Play the reel" spinning round it.
    Click: the 3D logo shrinks away, the frame grows from where it is to (almost) the whole screen,
    colour comes into the film and everything around it blurs out. Esc / Close puts it back. */
-.reelcur { position: fixed; left: 0; top: 0; width: 120px; height: 120px; margin: -60px 0 0 -60px; pointer-events: none; z-index: 10; transform: scale(0); opacity: 0; transition: opacity .2s; }
-.reelcur svg { width: 100%; height: 100%; display: block; transform: scale(var(--s, 0)); transition: transform .45s cubic-bezier(.3, 1.5, .5, 1); }
+.reelcur { position: fixed; left: 0; top: 0; width: 64px; height: 64px; margin: -32px 0 0 -32px; pointer-events: none; z-index: 10; transform: scale(0); opacity: 0; transition: opacity .2s; }
+.reelcur svg { width: 100%; height: 100%; display: block; transform: scale(var(--s, 0)); transition: transform .35s cubic-bezier(.3, 1.5, .5, 1); }
 .reelcur.is-on { opacity: 1; }
 .reelcur.is-on svg { --s: 1; }
-.reelcur__disc { fill: var(--red); }
-.reelcur text { font: 600 10.5px/1 var(--font); letter-spacing: .12em; fill: #fff; }
-.reelcur__spin { transform-origin: 60px 60px; animation: rcSpin 7s linear infinite; }
-@keyframes rcSpin { to { transform: rotate(360deg); } }
+.reelcur__disc { fill: rgb(0 0 0 / .4); stroke: rgb(255 255 255 / .8); stroke-width: 2.5; }
 .reelcur__play, .reelcur__pause rect { fill: #fff; }
 .reelcur__pause { display: none; }
-.reelcur.is-small svg { --s: .55; }
-.reelcur.is-small text { display: none; }
 .reelcur.is-pause .reelcur__play { display: none; }
 .reelcur.is-pause .reelcur__pause { display: block; }
+
+/* the hover tools (one shows, by .hcur[data-v]) */
+.hcur { position: fixed; inset: 0; pointer-events: none; z-index: 10; opacity: 0; transition: opacity .2s; overflow: hidden; }
+.hcur.is-on { opacity: 1; }
+.hc { display: none; }
+.hcur[data-v=snip] .hc--snip, .hcur[data-v=razor] .hc--razor, .hcur[data-v=slate] .hc--slate, .hcur[data-v=finder] .hc--finder { display: block; }
+.hc-lab { font-size: var(--ui); font-weight: 500; letter-spacing: .05em; text-transform: uppercase; line-height: 1; color: #fff; white-space: nowrap; text-shadow: 0 1px 8px rgb(0 0 0 / .6); }
+/* Snip: scissors with a short strip of the reel hanging from the blades */
+.sn-head { position: absolute; left: 0; top: 0; transform-origin: 30px 25px; z-index: 2; transition: opacity .3s; }
+.sn-head svg { display: block; overflow: visible; filter: drop-shadow(0 2px 6px rgb(0 0 0 / .5)); }
+.sn-head path { fill: #f4f4f4; }
+.sn-head .sn-arm { fill: none; stroke: #f4f4f4; stroke-width: 2.6; stroke-linecap: round; }
+.sn-head circle { fill: none; stroke: #f4f4f4; stroke-width: 2.3; }
+.sn-head .sn-pin { fill: var(--red); stroke: none; }
+.sn-head .hc-lab { position: absolute; left: 84px; top: 19px; }
+.sn-strip i { position: absolute; left: 0; top: 0; width: 28px; height: 45px; margin: -22.5px 0 0 -14px; background: #0c0c0c; box-shadow: 0 0 0 .5px rgb(255 255 255 / .12); }
+.sn-strip i::before, .sn-strip i::after { content: ""; position: absolute; left: 2px; right: 2px; height: 3px; background: repeating-linear-gradient(90deg, rgb(255 255 255 / .85) 0 3.5px, transparent 3.5px 7px); }
+.sn-strip i::before { top: 1px; } .sn-strip i::after { bottom: 1px; }
+.sn-strip canvas { position: absolute; left: 1px; top: 5px; width: 26px; height: 35px; filter: grayscale(1) contrast(1.05) brightness(.85); }
+.hc--snip.is-cut .sn-head { opacity: 0; transition-delay: .25s; }
+.hc--snip.is-cut .sn-strip { opacity: 0; transition: opacity .6s ease .35s; }
+/* Razor: an edit playhead across the reel; click slices the frame there and the film starts from that point */
+.rz-line { position: absolute; left: 0; top: 0; width: 1.5px; margin-left: -.75px; background: var(--red); box-shadow: 0 0 10px rgb(214 40 34 / .6); }
+.rz-line::before, .rz-line::after { content: ""; position: absolute; left: -5px; border: 6px solid transparent; }
+.rz-line::before { top: 0; border-top: 8px solid var(--red); }
+.rz-line::after { bottom: 0; border-bottom: 8px solid var(--red); }
+.rz-tag { position: absolute; left: 0; top: 0; display: flex; align-items: center; gap: 7px; height: 22px; padding: 0 9px 0 7px; background: var(--red); color: #fff; font-size: var(--ui); font-weight: 500; letter-spacing: .05em; text-transform: uppercase; line-height: 1; white-space: nowrap; font-variant-numeric: tabular-nums; }
+.rz-tag svg { fill: #fff; }
+.rz-tag b { font-weight: 500; opacity: .75; }
+.rz-half { position: absolute; left: 0; top: 0; width: 100%; height: 100%; z-index: 2; transition: transform .22s cubic-bezier(.2, .9, .3, 1), opacity .45s ease; }
+.frame.is-split .reel { visibility: hidden; }
+.rz-seam { position: absolute; top: 0; bottom: 0; width: 2px; margin-left: -1px; background: #fff; z-index: 2; box-shadow: 0 0 18px #fff; animation: rzSeam .6s ease-out forwards; }
+@keyframes rzSeam { 0% { opacity: 1; transform: scaleY(0); } 25% { opacity: 1; transform: scaleY(1); } 100% { opacity: 0; transform: scaleY(1); } }
+.hc--razor.is-cut { opacity: 0; transition: opacity .2s; }
+/* Slate: a clapperboard; click claps it shut */
+.hc--slate { position: absolute; left: 0; top: 0; width: 100px; height: 84px; margin: -42px 0 0 -50px; transition: opacity .35s ease .12s; }
+.hc--slate svg { display: block; overflow: visible; filter: drop-shadow(0 4px 12px rgb(0 0 0 / .55)); transition: transform .2s cubic-bezier(.3, 1.6, .5, 1); }
+.sl-board { fill: #111; stroke: #f2f2f2; stroke-width: 1.5; }
+.sl-bar { stroke: #f2f2f2; stroke-width: 1.2; }
+.sl-stick { transform-origin: 3px 24.5px; }
+.sl-pin { fill: var(--red); }
+.sl-k { font: 500 5.6px/1 var(--font); letter-spacing: .08em; text-transform: uppercase; fill: rgb(255 255 255 / .55); }
+.sl-v { font: 500 9px/1 var(--font); letter-spacing: .04em; fill: #fff; font-variant-numeric: tabular-nums; }
+.sl-ln { stroke: rgb(255 255 255 / .35); stroke-width: 1; }
+.sl-go { font: 600 7.2px/1 var(--font); letter-spacing: .1em; text-transform: uppercase; fill: var(--red); }
+.hc--slate.is-cut { opacity: 0; }
+.hc--slate.is-cut svg { transform: scale(1.12); }
+.reel-flash { position: absolute; inset: 0; background: #fff; z-index: 2; pointer-events: none; animation: reelFlash .5s ease-out forwards; }
+@keyframes reelFlash { from { opacity: .5; } to { opacity: 0; } }
+/* Viewfinder: camera brackets that pull focus as you move; click throws them out to the full-screen frame */
+.hc--finder { position: absolute; left: 0; top: 0; width: 92px; height: 62px; }
+.hc--finder i { position: absolute; width: 14px; height: 14px; border: 0 solid #fff; }
+.hc--finder i:nth-child(1) { left: 0; top: 0; border-left-width: 1.5px; border-top-width: 1.5px; }
+.hc--finder i:nth-child(2) { right: 0; top: 0; border-right-width: 1.5px; border-top-width: 1.5px; }
+.hc--finder i:nth-child(3) { left: 0; bottom: 0; border-left-width: 1.5px; border-bottom-width: 1.5px; }
+.hc--finder i:nth-child(4) { right: 0; bottom: 0; border-right-width: 1.5px; border-bottom-width: 1.5px; }
+.fd-rec { position: absolute; left: 8px; top: 7px; display: flex; align-items: center; gap: 4px; font-size: 9px; font-weight: 500; letter-spacing: .08em; text-transform: uppercase; color: #fff; }
+.fd-rec b { width: 5px; height: 5px; border-radius: 50%; background: var(--red); animation: fdBlink 1s steps(1) infinite; }
+@keyframes fdBlink { 50% { opacity: 0; } }
+.fd-x { position: absolute; left: 50%; top: 50%; width: 11px; height: 11px; margin: -5.5px 0 0 -5.5px; }
+.fd-x::before, .fd-x::after { content: ""; position: absolute; background: #fff; }
+.fd-x::before { left: 5px; top: 0; width: 1px; height: 11px; } .fd-x::after { left: 0; top: 5px; width: 11px; height: 1px; }
+.fd-go { position: absolute; left: 0; right: 0; bottom: 8px; text-align: center; font-size: 9px; font-weight: 500; letter-spacing: .14em; text-transform: uppercase; color: #fff; }
+.hc--finder.is-fly { transition: transform .6s cubic-bezier(.7, 0, .2, 1), width .6s cubic-bezier(.7, 0, .2, 1), height .6s cubic-bezier(.7, 0, .2, 1), opacity .3s; }
+.hc--finder.is-fly > span { opacity: 0; transition: opacity .15s; }
+.hc--finder.is-cut { opacity: 0; }
+
+/* temporary picker under the frame */
+.curpick { position: absolute; bottom: 0; left: 50%; transform: translateX(-50%); height: var(--my); display: flex; align-items: center; gap: 1.2em; padding-top: calc(var(--my) * .05); font-size: var(--ui); font-weight: 500; letter-spacing: .05em; text-transform: uppercase; line-height: 1; z-index: 3; transition: opacity .3s; }
+.curpick span { opacity: .4; }
+.curpick button { opacity: .45; transition: opacity .2s, color .2s; }
+.curpick button:hover { opacity: .9; }
+.curpick button[aria-pressed=true] { opacity: 1; color: var(--red); }
+body:not([data-scene=home]) .curpick, body.is-theater .curpick { opacity: 0; pointer-events: none; }
+@media (max-width: 760px) { .curpick, .hcur { display: none; } }
 body[data-scene=home]:not(.is-theater) .frame { cursor: none; }
 body.is-theater .frame { cursor: none; }
 body.reel-hover .ring { opacity: 0 !important; }
