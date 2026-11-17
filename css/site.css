@@ -86,11 +86,11 @@ button { font: inherit; color: inherit; background: none; border: 0; padding: 0;
 body[data-scene=about] .nav { left: var(--ax); right: 6vw; color: #0a0a0c; }
 body[data-scene=about] .nav a:hover, body[data-scene=about] .nav a[aria-current=page] { color: #fff; }
 .logo { transition: opacity .25s; }
-body:not([data-scene=home]):not(.is-opening) .logo { opacity: 0; }
+body:not([data-scene=home]):not([data-scene=about]):not(.is-opening) .logo { opacity: 0; }   /* on About it waits, full-screen, under the page */
 
 .about { position: fixed; inset: 0; z-index: 5; background: var(--page-red); color: #0a0a0c; overflow: hidden;
-  clip-path: circle(0% at 50% 50%); transition: clip-path .85s cubic-bezier(.7, 0, .25, 1); }
-.about.is-open { clip-path: circle(75% at 50% 50%); }
+  opacity: 0; transition: opacity .2s ease; }
+.about.is-open { opacity: 1; }   /* no reveal shape: the logo has already filled the screen with this exact red */
 .about.no-anim { transition: none; }
 .about__sub, .about__back, .about__hint, .plate figcaption, .ch__n { font-size: var(--ui); font-weight: 500; letter-spacing: .05em; text-transform: uppercase; line-height: 1; }
 .about__sub { position: absolute; left: var(--ax); top: 9vh; margin: 0; color: #fff; }
@@ -255,7 +255,7 @@ body:not([data-scene=home]):not(.is-opening) .logo { opacity: 0; }
    The red page turns to near-black. Rules draw, the six crafts rise one by one, the Whiplash
    mark fills with film from the top. Hover a craft: the word turns red and the mark plays it. */
 :root { --ink-bg: #0c0c11; }
-.about { transition: clip-path .85s cubic-bezier(.7, 0, .25, 1), background-color .7s ease; }
+.about { transition: opacity .2s ease, background-color .7s ease; }
 .about[data-detail=services] { background-color: var(--ink-bg); }
 body.is-dark[data-scene=about] .nav { color: #fff; }
 body.is-dark[data-scene=about] .nav a:hover, body.is-dark[data-scene=about] .nav a[aria-current=page] { color: var(--red); }

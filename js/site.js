@@ -55,10 +55,11 @@
     body.classList.add('is-opening');
     about.hidden = false; about.classList.remove('is-in', 'is-open', 'is-settled'); void about.offsetWidth;
     LOGO().setMode('flood');
-    setTimeout(function () { about.classList.add('is-open'); }, 380);
+    // the page simply appears once the logo's red covers the screen (same red, so nothing visibly changes)
     setTimeout(function () { setState(SCENES.indexOf('about')); }, 760);
+    setTimeout(function () { about.classList.add('is-open'); }, 820);
     coverPlate();
-    setTimeout(function () { about.classList.add('is-in'); revealPlate(450); }, 820);
+    setTimeout(function () { about.classList.add('is-in'); revealPlate(450); }, 900);
     setTimeout(function () { body.classList.remove('is-opening'); drawLogo(false); locked = false; }, 1500);
     setTimeout(function () { about.classList.add('is-settled'); }, 2000);   // entrance done: hovers may now move the words
   }
@@ -66,11 +67,14 @@
   function closeAbout() {
     locked = true;
     closeTry(true);
-    drawLogo(true);
-    about.classList.remove('is-in', 'is-open', 'is-settled');
-    setState(0);
-    LOGO().setMode('home');
-    setTimeout(function () { about.hidden = true; resetDetail(); locked = false; }, 900);
+    drawLogo(true);                                    // the full-screen red logo is waiting under the page
+    about.classList.remove('is-open', 'is-settled');   // the page fades onto it…
+    setTimeout(function () {
+      about.hidden = true; about.classList.remove('is-in'); resetDetail();
+      setState(0);
+      LOGO().setMode('home');                          // …and the logo shrinks back to its place
+      setTimeout(function () { locked = false; }, 700);
+    }, 220);
   }
 
   function cutTo(i) {
@@ -621,21 +625,9 @@
     if (e.key === 'ArrowLeft' || e.key === 'ArrowRight') { e.preventDefault(); e.stopPropagation(); stopDemo(); aimAt(tryT + (e.key === 'ArrowRight' ? step : -step)); }
   });
 
-  // a little demo when the page opens: the cut swings left and right once, then rests in the middle
-  // until the visitor grabs the line it keeps swinging left and right by itself
-  // (the scratch is heard on the first swing only, then it sways quietly)
-  var demoT = 0, demoOn = false, demoQuiet = false;
-  function demoSwing() {
-    demoOn = true; demoQuiet = false;
-    var side = -1, swings = 0;
-    (function next() {
-      if (!tryOpen || !demoOn) return;
-      aimAt(50 + side * 16); side = -side;
-      if (++swings > 2) demoQuiet = true;
-      demoT = setTimeout(next, 1250);
-    })();
-  }
-  function stopDemo() { demoOn = false; demoQuiet = false; clearTimeout(demoT); }
+  // the line stays in the middle until the visitor drags it (no self-moving demo)
+  var demoQuiet = false;
+  function stopDemo() { demoQuiet = false; }
 
   function openTry() {
     if (tryOpen) return;
@@ -647,7 +639,6 @@
     tryEl.hidden = false; tryEl.classList.remove('is-in', 'is-out', 'is-open'); void tryEl.offsetWidth;
     tryEl.classList.add('is-open');                         // the red line drops
     tryTimers.push(setTimeout(function () { tryEl.classList.add('is-in'); tick(1, .6); }, reduce ? 0 : 380));   // …and the film opens out of it
-    tryTimers.push(setTimeout(demoSwing, reduce ? 99999 : 2300));
     tryRaf = requestAnimationFrame(syncLoop);
     setTimeout(function () { trySplit.focus({ preventScroll: true }); }, 1400);
   }
