@@ -78,8 +78,8 @@ body.desk-off .stage, body.desk-off .about { transition: transform .8s cubic-bez
 .win__count { margin-left: auto; font-size: clamp(11px, .66vw, 13px); color: rgb(255 255 255 / .5); white-space: nowrap; }
 
 /* the PROJECTS window: a grid of category folders */
-.win--root { width: 52vw; height: 43.4vh; min-height: 330px; }
-.root__grid { flex: 1; display: grid; grid-template-columns: repeat(3, 1fr); align-content: center; justify-items: center; gap: 2.4vh 2vw; padding: 3vh 9vw; overflow: auto; }
+.win--root { width: 60vw; height: 70vh; min-height: 480px; max-height: calc(100vh - var(--mb) - 24px); }   /* room for 9 folders (3 x 3) without scrolling */
+.root__grid { flex: 1; display: grid; grid-template-columns: repeat(3, 1fr); align-content: center; justify-items: center; gap: 3vh 2vw; padding: 4vh 8vw; overflow: auto; }
 .root__grid .ficon { width: min(11vw, 17vh); }
 .root__grid .ficon svg { width: 72%; }
 .root__grid .ficon__label { font-size: clamp(11px, .78vw, 15px); }

@@ -241,10 +241,18 @@
   function go(id, fromHistory) {
     current = id; fdTitle.textContent = catName(id); sIn.value = '';
     if (!fromHistory) { hist = hist.slice(0, histAt + 1); hist.push(id); histAt = hist.length - 1; }
-    back.disabled = histAt <= 0; fwd.disabled = histAt >= hist.length - 1;
+    back.disabled = false; back.title = histAt > 0 ? 'Back' : 'Back to Projects'; fwd.disabled = histAt >= hist.length - 1;
     renderSide(); renderList(); list.scrollTop = 0;
   }
-  back.addEventListener('click', function () { if (histAt > 0) { histAt--; go(hist[histAt], true); } });
+  // back past the first folder = back to the PROJECTS window: the Finder folds into that folder's icon
+  function backToRoot() {
+    if (rootWin.hidden) { renderRoot(); rootWin.hidden = false; place(rootWin); }
+    var into = folderIcons[current] || null;
+    if (into) { deselect(rootGrid); into.classList.add('is-sel'); }
+    closeWin(fd, into); toFront(rootWin);
+  }
+  function goBack() { if (histAt > 0) { histAt--; go(hist[histAt], true); } else backToRoot(); }
+  back.addEventListener('click', goBack);
   fwd.addEventListener('click', function () { if (histAt < hist.length - 1) { histAt++; go(hist[histAt], true); } });
   vIcons.addEventListener('click', function () { setMode('icons'); });
   vList.addEventListener('click', function () { setMode('list'); });
@@ -339,6 +347,7 @@
     var typing = e.target === sIn;
     if (e.key === 'Escape') { if (openMenu) return closeMenus(); if (!ql.hidden) return closeQL(); if (typing && sIn.value) { sIn.value = ''; return renderList(); } return closeFront(); }
     if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'w') { e.preventDefault(); return closeFront(); }
+    if ((e.metaKey || e.ctrlKey) && (e.key === '[' || e.key === 'ArrowUp') && front === fd && !fd.hidden && ql.hidden) { e.preventDefault(); return goBack(); }
     if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'f') { e.preventDefault(); return MENUS.Edit()[0][2](); }
     if (typing) return;
     if (!ql.hidden) {
