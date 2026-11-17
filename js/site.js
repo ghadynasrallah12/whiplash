@@ -603,14 +603,13 @@
     tryV += ((tryT - tryX) * TRY_K - tryV * TRY_C) * dt;
     tryV = Math.max(-TRY_VMAX, Math.min(TRY_VMAX, tryV));
     setX(tryX + tryV * dt);
-    scratch(tryV);
-    var notch = Math.round(tryX / 4); if (notch !== lastNotch) { lastNotch = notch; frameClick(); }
+    if (!demoQuiet) { scratch(tryV); var notch = Math.round(tryX / 4); if (notch !== lastNotch) { lastNotch = notch; frameClick(); } }
     if (tryOpen && (Math.abs(tryT - tryX) > .02 || Math.abs(tryV) > .3)) tryMove = requestAnimationFrame(tryStep);
     else { tryMove = 0; tryV = 0; scratch(0); }
   }
   tryStage.addEventListener('pointerdown', function (e) {
     if (!tryOpen || e.button > 0) return;
-    e.preventDefault(); unlockSound(); tryStage.setPointerCapture(e.pointerId);
+    e.preventDefault(); unlockSound(); tryStage.setPointerCapture(e.pointerId); stopDemo();
     drag = true; tryEl.classList.add('is-dragging');
     aimAt(e.clientX / innerWidth * 100);
   });
@@ -619,14 +618,24 @@
   tryStage.addEventListener('pointerup', endDrag); tryStage.addEventListener('pointercancel', endDrag);
   trySplit.addEventListener('keydown', function (e) {
     var step = e.shiftKey ? 10 : 3;
-    if (e.key === 'ArrowLeft' || e.key === 'ArrowRight') { e.preventDefault(); e.stopPropagation(); aimAt(tryT + (e.key === 'ArrowRight' ? step : -step)); }
+    if (e.key === 'ArrowLeft' || e.key === 'ArrowRight') { e.preventDefault(); e.stopPropagation(); stopDemo(); aimAt(tryT + (e.key === 'ArrowRight' ? step : -step)); }
   });
 
   // a little demo when the page opens: the cut swings left and right once, then rests in the middle
+  // until the visitor grabs the line it keeps swinging left and right by itself
+  // (the scratch is heard on the first swing only, then it sways quietly)
+  var demoT = 0, demoOn = false, demoQuiet = false;
   function demoSwing() {
-    var keys = [[0, 34], [650, 64], [1300, 50]];
-    keys.forEach(function (k) { tryTimers.push(setTimeout(function () { if (tryOpen && !drag) aimAt(k[1]); }, k[0])); });
+    demoOn = true; demoQuiet = false;
+    var side = -1, swings = 0;
+    (function next() {
+      if (!tryOpen || !demoOn) return;
+      aimAt(50 + side * 16); side = -side;
+      if (++swings > 2) demoQuiet = true;
+      demoT = setTimeout(next, 1250);
+    })();
   }
+  function stopDemo() { demoOn = false; demoQuiet = false; clearTimeout(demoT); }
 
   function openTry() {
     if (tryOpen) return;
@@ -644,7 +653,7 @@
   }
   function closeTry(instant, then) {
     if (!tryOpen) { if (then) then(); return; }
-    tryOpen = false; drag = null; scratch(0); cancelAnimationFrame(tryRaf); cancelAnimationFrame(tryMove); tryMove = 0; tryV = 0; tryTimers.forEach(clearTimeout); tryTimers = [];
+    tryOpen = false; drag = null; stopDemo(); scratch(0); cancelAnimationFrame(tryRaf); cancelAnimationFrame(tryMove); tryMove = 0; tryV = 0; tryTimers.forEach(clearTimeout); tryTimers = [];
     var done = function () { tryEl.hidden = true; tryEl.classList.remove('is-in', 'is-out', 'is-open', 'is-dragging'); vBefore.pause(); vAfter.pause(); if (then) then(); };
     if (instant || reduce) return done();
     tryEl.classList.add('is-out'); tick(-1, .5);
