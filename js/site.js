@@ -835,7 +835,7 @@
   // The word is the designed wordmark (assets/wordmark.png, already off-register as in the design).
   // It is painted as 7 strips; each strip flies in from the side and comes to rest at 0, i.e. exactly
   // the design. After that a strip only drifts a little with the cursor and glitches now and then.
-  var WM_PULL = [-26, 20, -16, 30, -22, 17, -19];         // how much each strip follows the cursor (2200 = the word's width)
+  var WM_PULL = [-70, 55, -45, 85, -60, 48, -52];         // while hovering the word: how far each strip follows the cursor (2200 = the word's width)
   var wmCanvas = document.getElementById('wm'), wmCtx = wmCanvas.getContext('2d'), wmImg = new Image();
   var wmGeo = { W: 0 }, wm = [];
   for (var wk = 0; wk < 7; wk++) wm.push({ x: (wk % 2 ? 1 : -1) * 3000, target: (wk % 2 ? 1 : -1) * 3000, rest: 0, pull: 0, settled: false });
@@ -845,7 +845,7 @@
     var r = wmCanvas.getBoundingClientRect(); if (!r.width || !r.height) return false;
     var dpr = Math.min(window.devicePixelRatio || 1, 2), W = r.width, H = r.height, mobile = innerWidth <= 760;
     var ratio = wmImg.naturalWidth ? wmImg.naturalWidth / wmImg.naturalHeight : 7.07;
-    var ww = Math.min(mobile ? W - 24 : W * .93, H * ratio), x0 = mobile ? 12 : W * .0334;
+    var ww = mobile ? W - 24 : W * .93, x0 = mobile ? 12 : W * .0334;   // always 93% of the screen wide, like the design
     wmCanvas.width = Math.round(W * dpr); wmCanvas.height = Math.round(H * dpr);
     var unit = ww / 2200;
     wm.forEach(function (b, k) { b.pull = WM_PULL[k] * unit; });
@@ -862,20 +862,36 @@
   }
   window.addEventListener('resize', function () { if (!contact.hidden && wmBuild()) wmPaint(); });
   if (document.fonts && document.fonts.ready) document.fonts.ready.then(function () { if (!contact.hidden && wmBuild()) wmPaint(); });
-  var wmRaf = 0, wmMouse = 0, wmGlitchT = 0;
+  var wmRaf = 0, wmMouse = 0, wmGlitchT = 0, wmHover = false;
   function wmLoop() {
-    wm.forEach(function (b) { b.x += (b.target + (b.settled ? wmMouse * b.pull : 0) - b.x) * (b.fast ? .32 : .085); });
+    wm.forEach(function (b) { b.x += (b.target + (b.settled && wmHover ? wmMouse * b.pull : 0) - b.x) * (b.fast ? .3 : .1); });
     wmPaint();
     wmRaf = contact.hidden ? 0 : requestAnimationFrame(wmLoop);
   }
-  function wmGlitch() {   // every few seconds one or two strips jump and snap back
-    clearTimeout(wmGlitchT);
-    if (contact.hidden || reduce) return;
-    var picks = [(Math.random() * 7) | 0, Math.random() < .4 ? (Math.random() * 7) | 0 : -1];
-    picks.forEach(function (k) { if (k < 0) return; var b = wm[k], keep = b.target; b.fast = true; b.target = keep + (Math.random() < .5 ? -1 : 1) * (60 + Math.random() * 140) * (wmGeo.unit || 1); setTimeout(function () { b.target = keep; setTimeout(function () { b.fast = false; }, 200); }, 90 + Math.random() * 80); });
-    wmGlitchT = setTimeout(wmGlitch, 2200 + Math.random() * 3000);
+  // At rest the word is exactly the design. Only while the pointer is ON the word: the strips re-cut
+  // (each jumps sideways and snaps back, top to bottom) and then lean with the cursor; leaving puts them back.
+  function wmGlitch() { clearTimeout(wmGlitchT); }   // (no idle glitching any more)
+  function wmRecut() {
+    if (reduce) return;
+    wm.forEach(function (b, k) {
+      if (!b.settled) return;
+      setTimeout(function () {
+        b.fast = true; b.target = (k % 2 ? 1 : -1) * (90 + Math.random() * 120) * (wmGeo.unit || 1);
+        setTimeout(function () { b.target = b.rest; setTimeout(function () { b.fast = false; }, 220); }, 110);
+      }, k * 35);
+    });
+    tick(1, .45);
   }
-  contact.addEventListener('pointermove', function (e) { if (e.pointerType === 'mouse') wmMouse = e.clientX / innerWidth - .5; });
+  contact.addEventListener('pointermove', function (e) {
+    if (e.pointerType !== 'mouse' || !wmGeo.W) return;
+    var r = wmCanvas.getBoundingClientRect(), lx = e.clientX - r.left - wmGeo.x0, ly = e.clientY - r.top;
+    var inside = lx >= -12 && lx <= wmGeo.ww + 12 && ly >= -12 && ly <= wmGeo.wh + 12;
+    if (inside && !wmHover) { wmHover = true; wmRecut(); }
+    else if (!inside && wmHover) wmHover = false;
+    wmMouse = inside ? Math.max(-.5, Math.min(.5, lx / wmGeo.ww - .5)) : 0;
+    contact.classList.toggle('is-wm-hover', inside);
+  });
+  contact.addEventListener('pointerleave', function () { wmHover = false; wmMouse = 0; contact.classList.remove('is-wm-hover'); });
   function wmIntro(instant) {
     wmBuild();
     wm.forEach(function (b, k) {
