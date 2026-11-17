@@ -148,7 +148,7 @@ body.desk-off .stage, body.desk-off .about { transition: transform .8s cubic-bez
 .ql__bar button:hover, .ql__bar a:hover { background: rgb(255 255 255 / .1); }
 .ql__bar .ql__film { background: var(--red); }
 .ql__bar .ql__film:hover { background: #e83a30; }
-.ql__media { position: relative; background: #000; aspect-ratio: 16 / 9; flex: none; max-height: 62vh; }
+.ql__media { position: relative; background: #000; flex: none; align-self: stretch; width: 100%; height: min(62vh, calc(min(64vw, 1100px) * 9 / 16)); }   /* explicit size: with aspect-ratio + max-height Safari narrowed the box and pushed it left */
 .ql__media video, .ql__media img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: contain; object-position: 50% 50%; display: block; }   /* pinned to the box: Safari sized it from the film and left-aligned it */
 .ql__info { overflow: auto; padding: 18px 22px 22px; display: grid; grid-template-columns: 1.1fr 1fr; gap: 24px; font-size: 13.5px; line-height: 1.5; color: rgb(255 255 255 / .82); }
 .ql__info h2 { margin: 0 0 4px; font: 600 22px/1.15 var(--font); text-transform: uppercase; color: #fff; }
@@ -177,6 +177,7 @@ body.desk-off .stage, body.desk-off .about { transition: transform .8s cubic-bez
   .fd__search { width: 34vw; }
   .fd__grid { grid-template-columns: repeat(2, 1fr); }
   .ql__win { width: calc(100vw - 20px); }
+  .ql__media { height: min(62vh, calc((100vw - 20px) * 9 / 16)); }
   .ql__info { grid-template-columns: 1fr; gap: 14px; }
 }
 @media (prefers-reduced-motion: reduce) { .desk, .desk * { transition-duration: .01ms !important; transition-delay: 0s !important; } }
