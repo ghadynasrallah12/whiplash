@@ -83,7 +83,7 @@ button { font: inherit; color: inherit; background: none; border: 0; padding: 0;
    spreads out of it (a circle from the centre). Closing runs the same thing backwards. */
 :root { --page-red: #ab231b;   /* = the 3D logo's lit red, so the flood hands over without a colour change */ --ax: 5.7vw; --row: min(6.75vw, 12.2vh); --pitch: calc(var(--row) * 1.32); }   /* --pitch: one chapter line plus the air between lines */
 .nav { z-index: 6; transition: left .7s cubic-bezier(.6, 0, .2, 1), right .7s cubic-bezier(.6, 0, .2, 1), color .3s; }
-body[data-scene=about] .nav { left: var(--ax); right: 6vw; color: #0a0a0c; }
+body[data-scene=about] .nav { color: #0a0a0c; }   /* same place as on the homepage; only the colour changes */
 body[data-scene=about] .nav a:hover, body[data-scene=about] .nav a[aria-current=page] { color: #fff; }
 .logo { transition: opacity .25s; }
 body:not([data-scene=home]):not([data-scene=about]):not(.is-opening) .logo { opacity: 0; }   /* on About it waits, full-screen, under the page */
@@ -490,7 +490,6 @@ body.is-theater .theater:hover ~ * { cursor: auto; }
 }
 @media (max-width: 760px) {
   :root { --ax: 18px; --row: 11.4vw; }
-  body[data-scene=about] .nav { right: 18px; }
   .about__sub { top: 104px; }
   .chapters { top: 128px; width: calc(100vw - 36px); }
   .ch__n { width: 44px; }
