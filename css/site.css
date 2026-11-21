@@ -15,7 +15,7 @@
 }
 :root {
   --bg: #0b0b10;                 /* the dark around the frame */
-  --red: #e91e22;   /* brand red, Whiplash guidelines 2026 (RGB 233, 30, 34) */
+  --red: #ce1e27;   /* brand red as the guidelines' swatch shows it (sRGB 206, 30, 39) */
   --ink: #fff;
   --mx: 7.8vw;                   /* frame margin, left/right */
   --my: 9vh;                     /* frame margin, top/bottom */
@@ -81,7 +81,7 @@ button { font: inherit; color: inherit; background: none; border: 0; padding: 0;
 /* ---------- [02] About ----------
    Opens from the logo: the logo grows until its red fills the screen, and this red page
    spreads out of it (a circle from the centre). Closing runs the same thing backwards. */
-:root { --page-red: #e91e22;   /* brand red = the 3D logo's lit front face, so the flood hands over without a colour change */ --ax: 5.7vw; --row: min(6.75vw, 12.2vh); --pitch: calc(var(--row) * 1.32); }   /* --pitch: one chapter line plus the air between lines */
+:root { --page-red: #ce1e27;   /* brand red = the 3D logo's lit front face, so the flood hands over without a colour change */ --ax: 5.7vw; --row: min(6.75vw, 12.2vh); --pitch: calc(var(--row) * 1.32); }   /* --pitch: one chapter line plus the air between lines */
 .nav { z-index: 6; transition: left .7s cubic-bezier(.6, 0, .2, 1), right .7s cubic-bezier(.6, 0, .2, 1), color .3s; }
 body[data-scene=about] .nav { color: #0a0a0c; }   /* same place as on the homepage; only the colour changes */
 body[data-scene=about] .nav a:hover, body[data-scene=about] .nav a[aria-current=page] { color: #fff; }
@@ -354,7 +354,7 @@ body.is-dark[data-scene=about] .nav a:hover, body.is-dark[data-scene=about] .nav
 .try.is-in .try__handle { transform: none; }
 .try__handle svg { width: 52%; fill: #fff; transition: transform .2s; }
 .try__split:hover .try__handle svg, .try.is-dragging .try__handle svg { transform: scaleX(1.25); }
-.try.is-dragging .try__handle { background: var(--red-hi, #f2383c); }
+.try.is-dragging .try__handle { background: var(--red-hi, #df2e36); }
 .try__split:focus-visible .try__handle { outline: 2px solid #fff; outline-offset: 3px; }
 
 .try__copy { position: absolute; left: var(--ax); bottom: 9.3vh; z-index: 3; color: #0a0a0c; pointer-events: none; }
@@ -443,7 +443,7 @@ body.no-trans .frame, body.no-trans .stage > *, body.no-trans .stage::after, bod
 .hcur.is-on { opacity: 1; }
 .hc--razor { display: block; }
 /* Razor: an edit playhead across the reel; click opens the film full screen from that point */
-.rz-line { position: absolute; left: 0; top: 0; width: 1.5px; margin-left: -.75px; background: var(--red); box-shadow: 0 0 10px rgb(233 30 34 / .6); }
+.rz-line { position: absolute; left: 0; top: 0; width: 1.5px; margin-left: -.75px; background: var(--red); box-shadow: 0 0 10px rgb(206 30 39 / .6); }
 .rz-line::before, .rz-line::after { content: ""; position: absolute; left: -5px; border: 6px solid transparent; }
 .rz-line::before { top: 0; border-top: 8px solid var(--red); }
 .rz-line::after { bottom: 0; border-bottom: 8px solid var(--red); }

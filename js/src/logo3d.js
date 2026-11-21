@@ -9,8 +9,8 @@ window.THREE = THREE;   // shared with js/gl-media.js
 
 // ---------- Tunables -------------------------------------
 const CONFIG = {
-  color: 0xff0a10,   // base red: once lit, the front face shows the brand red #E91E22 (233,30,34)
-  pageRed: 0xe91e22,       // brand red (guidelines): the About page's red = the lit front face; the flood flattens into it
+  color: 0xe2081a,   // base red: once lit, the front face shows the brand red #CE1E27 (206,30,39)
+  pageRed: 0xce1e27,       // brand red (guidelines): the About page's red = the lit front face; the flood flattens into it
   depth: 14,               // extrusion depth (bar width = 16)
   skewDeg: 0,             // italic slant of the glyph
   heightVH: 0.26,          // logo height as a fraction of viewport height (desktop)
