@@ -47,7 +47,7 @@
   const fail = (e) => {
     console.error(e);
     const m = (e && e.message) || '';
-    if (/is_red|'line' column/.test(m)) return toast('This needs a one-time database update: run supabase/schema.sql in Supabase (SQL Editor), then try again.', true);
+    if (/is_red|'line' column|'client' column|'released' column|'months' column/.test(m)) return toast('This needs a one-time database update: run supabase/schema.sql in Supabase (SQL Editor), then try again.', true);
     toast(m || 'Something went wrong. Try again.', true);
   };
 
@@ -370,6 +370,11 @@
     const types = h('datalist', { id: 'types' }, [...new Set(S.projects.map((x) => x.type).filter(Boolean))].map((t) => h('option', { value: t })));
     const cat = h('select', null, h('option', { value: '' }, 'No category'), S.categories.slice().sort(byPos).map((c) => h('option', { value: c.id, selected: c.id === p.category_id }, c.name)));
     const desc = h('textarea', { value: p.description, rows: 4 });
+    // the Clients page timeline: a project with a client and a month becomes a clip on its folder's track
+    const client = h('input', { type: 'text', value: p.client || '', placeholder: 'Lancôme', list: 'clientnames' });
+    const clientNames = h('datalist', { id: 'clientnames' }, [...new Set(S.projects.map((x) => x.client).concat(S.clients.map((c) => c.name)).filter(Boolean))].map((t) => h('option', { value: t })));
+    const released = h('input', { type: 'month', value: (p.released || '').slice(0, 7) });
+    const months = h('input', { type: 'number', min: 1, max: 36, value: p.months || 3 });
     const thumb = mediaField({ label: 'Still image', kind: 'image', folder: 'projects', value: p.thumb_url, hint: '16:9, up to 10 MB. Shown in the project list.' });
     const clip = mediaField({ label: 'Preview clip', kind: 'video', folder: 'projects', value: p.video_url, hint: 'A short silent loop, up to 50 MB (10 to 20 seconds at 1080p is plenty). It plays in the list and behind the project page.' });
     const hostNote = h('span', { class: 'hint' });
@@ -393,6 +398,7 @@
       build(body) {
         body.append(
           field('Project name', name), h('div', { class: 'row2' }, field('Type', type), field('Folder', cat, 'The folder it sits in on the Projects page.')), types,
+          h('div', { class: 'row2' }, field('Client', client, 'Shown as a clip on the Clients timeline, on its folder\'s track.'), h('div', { class: 'row2' }, field('Month', released), field('Length (months)', months))), clientNames,
           field('Description', desc),
           h('div', { class: 'group' }, h('h3', null, 'Film'), thumb, clip, h('div', { class: 'field' }, h('label', { for: 'film' }, 'Full film link'), Object.assign(film, { id: 'film' }), hostNote)),
           h('div', { class: 'group' }, h('h3', null, 'Credits'), credits, h('div', null, h('button', { class: 'btn btn--sm', type: 'button', onclick: () => addCredit().querySelector('input').focus() }, 'Add credit'))),
@@ -406,7 +412,7 @@
           if (hero.input.checked && !clip.get()) return toast('The homepage film needs a preview clip.', true);
           save.disabled = true; save.textContent = 'Saving…';
           try {
-            const row = { ...p, name: name.value.trim(), type: type.value.trim(), category_id: cat.value || null, description: desc.value.trim(), thumb_url: thumb.get(), video_url: clip.get(), film_link: film.value.trim(), logo_url: logo.get(), award_url: award.get(),
+            const row = { ...p, client: client.value.trim(), released: released.value ? released.value + '-01' : null, months: Math.max(1, Math.min(36, +months.value || 3)), name: name.value.trim(), type: type.value.trim(), category_id: cat.value || null, description: desc.value.trim(), thumb_url: thumb.get(), video_url: clip.get(), film_link: film.value.trim(), logo_url: logo.get(), award_url: award.get(),
               credits: [...credits.children].map((r) => [...r.querySelectorAll('input')].map((i) => i.value.trim())).filter((c) => c[0] || c[1]), is_hero: hero.input.checked, published: published.input.checked };
             if (isNew) row.position = S.projects.length + 1;
             if (row.is_hero) for (const o of S.projects.filter((x) => x.is_hero && x.id !== p.id)) { await api.patch('projects', o.id, { is_hero: false }); o.is_hero = false; }

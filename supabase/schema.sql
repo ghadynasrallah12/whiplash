@@ -70,6 +70,11 @@ create table if not exists public.clients (
   website  text not null default ''
 );
 
+-- Clients page timeline: a project with a client and a month is a clip on its folder's track
+alter table public.projects add column if not exists client   text not null default '';
+alter table public.projects add column if not exists released date;
+alter table public.projects add column if not exists months   int  not null default 3;
+
 -- About page: the chapters (History, Countries, Services…)
 create table if not exists public.chapters (
   id        uuid primary key default gen_random_uuid(),

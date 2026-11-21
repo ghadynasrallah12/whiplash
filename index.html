@@ -144,6 +144,18 @@
     </div>
   </section>
 
+  <!-- [03] Clients: an editing timeline. Each client is a clip on a track; the bar underneath zooms and moves it. -->
+  <section class="tlc" id="tlc" hidden aria-label="Clients">
+    <div class="tlc__area">
+      <div class="tlc__ruler"></div>
+      <div class="tlc__rows"></div>
+      <div class="tlc__head" aria-hidden="true"></div>
+    </div>
+    <div class="tlc__bar" aria-label="Zoom"><div class="tlc__win"><i class="tlc__h tlc__h--l"></i><i class="tlc__h tlc__h--r"></i></div></div>
+    <p class="tlc__hint">Pinch or ⌘ + scroll to zoom · Swipe to move · Drag the playhead</p>
+    <div class="tlc__ctl"><button type="button" data-z="out">− Zoom out</button><button type="button" data-z="in">+ Zoom in</button><button type="button" data-z="fit">Fit all</button><button type="button" data-z="play">Pause</button></div>
+  </section>
+
   <!-- [05] Contact. Comes in as seven dark strips; the WHIPLASH word is cut into the same seven strips. -->
   <section class="contact" id="contact" aria-labelledby="nav-contact" hidden>
     <div class="contact__shut" aria-hidden="true"><i style="--k:0"></i><i style="--k:1"></i><i style="--k:2"></i><i style="--k:3"></i><i style="--k:4"></i><i style="--k:5"></i><i style="--k:6"></i></div>
@@ -183,6 +195,7 @@
   <script src="js/logo3d.js" defer></script>
   <script src="js/globe-land.js" defer></script>
   <script src="js/globe.js" defer></script>
+  <script src="js/clients.js" defer></script>
   <script src="js/site.js" defer></script>
   <script src="js/desk.js" defer></script>
 </body>

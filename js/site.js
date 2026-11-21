@@ -7,6 +7,7 @@
 (function () {
   'use strict';
   var SCENES = ['home', 'about', 'clients', 'projects', 'contact'];
+  if (window.WL_CLIENTS) window.WL_CLIENTS.init();
   var FPS = 25;
   var CFG = window.WHIPLASH_CONFIG || {};
   var body = document.body, stage = document.querySelector('.stage'), reel = document.querySelector('.reel');
@@ -36,6 +37,7 @@
     var D = window.WL_DESK;
     if (D) { if (name === 'projects') D.open(true); else if (!D.busy) D.close(true); }
     if (typeof contactSnap === 'function' && !contactBusy) contactSnap(name === 'contact');
+    if (window.WL_CLIENTS) window.WL_CLIENTS[name === 'clients' ? 'show' : 'hide']();   // [03] the clients timeline
     setState(i);
     LOGO().setMode(name === 'home' ? 'home' : name === 'about' ? 'flood' : 'hidden');
     about.classList.add('no-anim');
@@ -281,16 +283,9 @@
       o.connect(og).connect(ac.destination); o.start(t); o.stop(t + .012);
     } catch (e) { /* no audio */ }
   }
-  function lockClunk() {
+  function lockClunk() {   // the lock opening: a light double tick (no low "bub" any more)
     if (reduce || !ac || !soundOn || ac.state !== 'running' || !lockAudible()) return;
-    try {
-      var t = ac.currentTime + .01;
-      var o = ac.createOscillator(), g = ac.createGain();
-      o.type = 'sine'; o.frequency.setValueAtTime(120, t); o.frequency.exponentialRampToValueAtTime(42, t + .18);
-      g.gain.setValueAtTime(.0001, t); g.gain.exponentialRampToValueAtTime(.6, t + .005); g.gain.exponentialRampToValueAtTime(.0001, t + .3);
-      o.connect(g).connect(ac.destination); o.start(t); o.stop(t + .32);
-      lockClick(.9, .6);
-    } catch (e) { /* no audio */ }
+    lockClick(.7, 1.1); setTimeout(function () { if (lockAudible()) lockClick(.5, 1.25); }, 55);
   }
 
 
@@ -828,6 +823,9 @@
     rest('milestones?select=year,title,line&order=position').then(function (rows) {
       if (rows.length) { MILESTONES = rows; renderTimeline(); }
     }).catch(function () { /* keep the built-in dates */ });
+    // projects with a client and a date become clips on the Clients timeline (their folder = the track)
+    if (window.WL_CLIENTS) Promise.all([rest('projects?select=*&published=eq.true&order=position'), rest('categories?select=*&order=position')])
+      .then(function (r) { window.WL_CLIENTS.load(r[0], r[1]); }).catch(function () { /* keep the built-in timeline */ });
     // the project marked "Homepage film" supplies the reel
     rest('projects?select=video_url,thumb_url&is_hero=eq.true&published=eq.true&limit=1').then(function (rows) {
       var p = rows[0]; if (!p || !p.video_url || reelFromDash) return;
