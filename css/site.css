@@ -386,7 +386,6 @@ body[data-scene=contact] .nav a:hover, body[data-scene=contact] .nav a[aria-curr
 
 .contact:not(.is-content) .wm { visibility: hidden; }   /* the word only appears once the dark page is in */
 .wm { position: absolute; left: 0; top: 13.97vh; width: 100vw; height: calc(93vw / 6.69); display: block; }
-.contact.is-wm-hover { cursor: crosshair; }
 
 .cta { position: absolute; margin: 0; left: var(--ax); top: 53.6vh; font-weight: 500; font-size: min(8.1vw, 14.4vh); line-height: .99; letter-spacing: -.015em; text-transform: uppercase; }
 .cta em { font-style: normal; color: var(--red); }

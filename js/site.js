@@ -149,27 +149,31 @@
     }, 42);
     scTimers.set(el, id);
   }
-  // sound: a soft bubble with a little bass under it, synthesised (no audio files).
+  // sound: a tiny dial 'tik' (like scrubbing a timeline on a phone), synthesised (no audio files).
   // Browsers only allow sound after a real click / key / touch, so it wakes up on the first one.
   var ac = null;
   function unlockSound() { try { ac = ac || new (window.AudioContext || window.webkitAudioContext)(); if (ac.state !== 'running') ac.resume(); } catch (e) { /* no audio */ } }
   ['pointerdown', 'keydown', 'touchend'].forEach(function (ev) { document.addEventListener(ev, unlockSound, { passive: true }); });
   var pageReady = document.readyState === 'complete';
   window.addEventListener('load', function () { setTimeout(function () { pageReady = true; }, 300); });
+  var tickBuf = null;
   function tick(dir, vol) {
     if (reduce || !ac || !soundOn || !pageReady) return;   // sound switched off = no hover sounds either; none while the page is still loading
     try {
       if (ac.state !== 'running') { ac.resume(); return; }
-      var t = ac.currentTime + .01, j = .9 + Math.random() * .2;
-      var o = ac.createOscillator(), g = ac.createGain(), lp = ac.createBiquadFilter();
-      o.type = 'sine'; o.frequency.setValueAtTime((dir > 0 ? 620 : 240) * j, t); o.frequency.exponentialRampToValueAtTime((dir > 0 ? 190 : 640) * j, t + .16);
-      g.gain.setValueAtTime(.0001, t); g.gain.exponentialRampToValueAtTime(.22 * vol, t + .012); g.gain.exponentialRampToValueAtTime(.0001, t + .22);
-      lp.type = 'lowpass'; lp.frequency.value = 2200; lp.Q.value = 2;
-      o.connect(lp).connect(g).connect(ac.destination); o.start(t); o.stop(t + .25);
-      var b = ac.createOscillator(), bg = ac.createGain();
-      b.type = 'sine'; b.frequency.setValueAtTime(82, t); b.frequency.exponentialRampToValueAtTime(46, t + .18);
-      bg.gain.setValueAtTime(.0001, t); bg.gain.exponentialRampToValueAtTime(.5 * vol, t + .008); bg.gain.exponentialRampToValueAtTime(.0001, t + .3);
-      b.connect(bg).connect(ac.destination); b.start(t); b.stop(t + .32);
+      // like the notches of the straighten / timeline dial on a phone: a tiny dry "tik", no pitch, no tail
+      if (!tickBuf) { tickBuf = ac.createBuffer(1, Math.round(ac.sampleRate * .03), ac.sampleRate); var d = tickBuf.getChannelData(0); for (var k = 0; k < d.length; k++) d[k] = (Math.random() * 2 - 1) * Math.pow(1 - k / d.length, 3); }
+      var t = ac.currentTime + .005, j = .94 + Math.random() * .12, v = Math.min(1, vol || .5);
+      var n = ac.createBufferSource(), bp = ac.createBiquadFilter(), hp = ac.createBiquadFilter(), g = ac.createGain();
+      n.buffer = tickBuf;
+      bp.type = 'bandpass'; bp.frequency.value = (dir > 0 ? 3400 : 3000) * j; bp.Q.value = 1.6;
+      hp.type = 'highpass'; hp.frequency.value = 900;
+      g.gain.setValueAtTime(.0001, t); g.gain.exponentialRampToValueAtTime(.9 * v, t + .0008); g.gain.exponentialRampToValueAtTime(.0001, t + .016);
+      n.connect(bp).connect(hp).connect(g).connect(ac.destination); n.start(t); n.stop(t + .03);
+      var o = ac.createOscillator(), og = ac.createGain();   // the little body of the click
+      o.type = 'triangle'; o.frequency.setValueAtTime(1900 * j, t); o.frequency.exponentialRampToValueAtTime(1200 * j, t + .01);
+      og.gain.setValueAtTime(.0001, t); og.gain.exponentialRampToValueAtTime(.12 * v, t + .0006); og.gain.exponentialRampToValueAtTime(.0001, t + .012);
+      o.connect(og).connect(ac.destination); o.start(t); o.stop(t + .02);
     } catch (e) { /* no audio */ }
   }
   function chapterFx(i, dir) {
@@ -876,7 +880,7 @@
   }
   // At rest the word is exactly the design. Only while the pointer is ON the word: the strips re-cut
   // (each jumps sideways and snaps back, top to bottom) and then lean with the cursor; leaving puts them back.
-  // every 10 seconds: strip by strip, top to bottom, the word cuts sideways into the timeline version, holds, then cuts back
+  // every 5 seconds: strip by strip, top to bottom, the word cuts sideways into the timeline version, holds, then cuts back
   function wmSwap(toCut) {
     wm.forEach(function (b, k) {
       contactT.push(setTimeout(function () {
@@ -892,7 +896,7 @@
       if (contact.hidden) return;
       wmSwap(true);
       wmGlitchT = setTimeout(function () { wmSwap(false); wmGlitch(); }, 2600);
-    }, 10000);
+    }, 5000);
   }
   function wmRecut() {
     if (reduce) return;
@@ -905,16 +909,7 @@
     });
     tick(1, .45);
   }
-  contact.addEventListener('pointermove', function (e) {
-    if (e.pointerType !== 'mouse' || !wmGeo.W) return;
-    var r = wmCanvas.getBoundingClientRect(), lx = e.clientX - r.left - wmGeo.x0, ly = e.clientY - r.top;
-    var inside = lx >= -12 && lx <= wmGeo.ww + 12 && ly >= -12 && ly <= wmGeo.wh + 12;
-    if (inside && !wmHover) { wmHover = true; wmRecut(); }
-    else if (!inside && wmHover) wmHover = false;
-    wmMouse = inside ? Math.max(-.5, Math.min(.5, lx / wmGeo.ww - .5)) : 0;
-    contact.classList.toggle('is-wm-hover', inside);
-  });
-  contact.addEventListener('pointerleave', function () { wmHover = false; wmMouse = 0; contact.classList.remove('is-wm-hover'); });
+  // (hovering the word does nothing: it only changes on its own, every 5 seconds)
   function wmIntro(instant) {
     wmBuild();
     wm.forEach(function (b, k) {
