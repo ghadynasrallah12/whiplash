@@ -35,14 +35,15 @@
       var lane = el('div', 'tlc__lane'); r.appendChild(lane);
       t.els = t.clips.map(function (c) {
         var k = el('button', 'tlc__clip'); k.type = 'button'; k.appendChild(el('span', '', c[2]));
+        k.style.setProperty('--d', (0.35 + frac(c[0]) * 0.7 + i * 0.07).toFixed(2) + 's');
         k.addEventListener('click', function () { ph = frac(c[0]) + 0.0005; keepInView(); paint(); });
-        k.addEventListener('pointerenter', function () { var t2 = WL().tick; if (t2) t2(1, .4); });
         lane.appendChild(k); return k;
       });
       rows.appendChild(r);
     });
     var r = el('div', 'tlc__row tlc__row--a'), lab = el('div', 'tlc__lab'); lab.appendChild(el('b', '', 'A1')); lab.appendChild(document.createTextNode(' Sound'));
     r.appendChild(lab); var lane = el('div', 'tlc__lane'); lane.appendChild(wave); r.appendChild(lane); rows.appendChild(r);
+    [].forEach.call(rows.querySelectorAll('.tlc__lab'), function (l, i) { l.style.setProperty('--d', (0.15 + i * 0.06).toFixed(2) + 's'); });
   }
 
   // ruler: years, and months once zoomed in far enough
@@ -86,7 +87,7 @@
         e.hidden = x1 < -1 || x0 > 101;
         var on = ph >= frac(c[0]) && ph <= frac(c[1]);
         e.classList.toggle('is-on', on);
-        if (on && lastClip !== e && running) { lastClip = e; var tk = WL().tick; if (tk && !dragging) tk(1, .35); }
+        if (on) lastClip = e;
       });
     });
     var hx = xOf(ph); head.style.left = hx + '%'; head.hidden = hx < 0 || hx > 100;
@@ -99,12 +100,25 @@
     var w = nb - na; if (na < 0) { na = 0; nb = w; } if (nb > 1) { nb = 1; na = 1 - w; }
     a = Math.max(0, na); b = Math.min(1, nb); paint();
   }
-  function zoom(k, at) { at = at == null ? (a + b) / 2 : at; setWindow(at - (at - a) * k, at + (b - at) * k); }
+  // zoom: always from the playhead when it's on screen, otherwise from the left edge; animated so you can follow it
+  var za = null, zb = null;
+  function anchor() { return ph >= a && ph <= b ? ph : a; }
+  function zoom(k) {
+    var at = anchor(), ca = za != null ? za : a, cb = zb != null ? zb : b;
+    var na = at - (at - ca) * k, nb = at + (cb - at) * k;
+    var minW = 6 / ((Y1 - Y0) * 12); if (nb - na < minW) { na = at - (at - ca) / (cb - ca) * minW; nb = na + minW; }
+    var w = nb - na; if (na < 0) { na = 0; nb = Math.min(1, w); } if (nb > 1) { nb = 1; na = Math.max(0, 1 - w); }
+    za = na; zb = nb;
+  }
   function keepInView() { var w = b - a; if (ph < a || ph > b) setWindow(ph - w * 0.1, ph - w * 0.1 + w); }
 
   function loop(now) {
     var dt = last ? Math.min(0.05, (now - last) / 1000) : 0; last = now;
-    if (playing && !dragging && !reduce) {
+    if (za != null) {   // easing toward a zoom
+      var e2 = Math.min(1, dt * 9 || 0.15); a += (za - a) * e2; b += (zb - b) * e2;
+      if (Math.abs(za - a) < 1e-4 && Math.abs(zb - b) < 1e-4) { a = za; b = zb; za = zb = null; }
+    }
+    if (playing && !dragging && !reduce && za == null) {
       ph += dt / 34;                                  // the whole timeline plays in about half a minute
       if (ph > 1) { ph = 0; lastClip = null; }
       if (b - a < 0.999 && ph > b - (b - a) * 0.08) setWindow(a + dt / 34, b + dt / 34);   // zoomed in: the view follows the playhead
@@ -118,7 +132,7 @@
     function barDrag(kind) {
       return function (e) {
         e.preventDefault(); e.stopPropagation(); bar.setPointerCapture(e.pointerId);
-        dragging = { kind: kind, x: e.clientX, a: a, b: b, w: bar.getBoundingClientRect().width };
+        za = zb = null; dragging = { kind: kind, x: e.clientX, a: a, b: b, w: bar.getBoundingClientRect().width };
       };
     }
     hL.addEventListener('pointerdown', barDrag('l')); hR.addEventListener('pointerdown', barDrag('r')); win.addEventListener('pointerdown', barDrag('m'));
@@ -145,7 +159,7 @@
     area.addEventListener('wheel', function (e) {
       e.preventDefault();
       var r = area.getBoundingClientRect(), at = a + (b - a) * (e.clientX - r.left) / r.width;
-      if (e.ctrlKey || e.metaKey) zoom(Math.exp(e.deltaY * 0.01), at);
+      if (e.ctrlKey || e.metaKey) { za = zb = null; var k = Math.exp(e.deltaY * 0.01), z0 = anchor(); setWindow(z0 - (z0 - a) * k, z0 + (b - z0) * k); }
       else { var d = (Math.abs(e.deltaX) > Math.abs(e.deltaY) ? e.deltaX : e.deltaY) / r.width * (b - a); setWindow(a + d, b + d); }
     }, { passive: false });
     // touch: one finger swipes, two fingers pinch
@@ -157,16 +171,16 @@
       if (ids.length === 1) { var d = -(e.clientX - touches[e.pointerId]) / r.width * (b - a); setWindow(a + d, b + d); }
       else if (ids.length === 2) {
         var other = touches[ids[0] == e.pointerId ? ids[1] : ids[0]], dist = Math.abs(e.clientX - other);
-        if (pinch) zoom(pinch / Math.max(20, dist), a + (b - a) * ((e.clientX + other) / 2 - r.left) / r.width);
+        if (pinch) { za = zb = null; var kk = pinch / Math.max(20, dist), z1 = anchor(); setWindow(z1 - (z1 - a) * kk, z1 + (b - z1) * kk); }
         pinch = dist;
       }
       touches[e.pointerId] = e.clientX;
     });
     function tUp(e) { delete touches[e.pointerId]; pinch = null; }
     area.addEventListener('pointerup', tUp); area.addEventListener('pointercancel', tUp);
-    root.querySelector('[data-z="out"]').addEventListener('click', function () { zoom(1.6); });
-    root.querySelector('[data-z="in"]').addEventListener('click', function () { zoom(1 / 1.6, ph); });
-    root.querySelector('[data-z="fit"]').addEventListener('click', function () { setWindow(0, 1); });
+    root.querySelector('[data-z="out"]').addEventListener('click', function () { zoom(1.8); });
+    root.querySelector('[data-z="in"]').addEventListener('click', function () { zoom(1 / 1.8); });
+    root.querySelector('[data-z="fit"]').addEventListener('click', function () { za = 0; zb = 1; });
     playBtn.addEventListener('click', function () { playing = !playing; playBtn.textContent = playing ? 'Pause' : 'Play'; });
     window.addEventListener('resize', function () { if (running) paint(); });
   }
@@ -201,7 +215,8 @@
     },
     load: function (projects, categories) { var t = fromProjects(projects || [], categories || []); if (t) { tracks = t; if (rows) build(); if (running) paint(); } },
     show: function () {
-      if (!root) return; root.hidden = false; void root.offsetWidth; root.classList.add('is-in');
+      if (!root) return; root.classList.remove('is-in'); root.hidden = false; a = 0; b = 1; za = zb = null; ph = 0; lastClip = null; paint();
+      void root.offsetWidth; requestAnimationFrame(function () { root.classList.add('is-in'); });
       if (!running) { running = true; last = 0; lastClip = null; raf = requestAnimationFrame(loop); }
     },
     hide: function () { if (!root) return; running = false; cancelAnimationFrame(raf); root.classList.remove('is-in'); root.hidden = true; },

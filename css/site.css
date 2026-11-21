@@ -564,8 +564,23 @@ body.is-theater .theater:hover ~ * { cursor: auto; }
 @media (prefers-reduced-motion: reduce) { .rec i { animation: none; } .about, .about *, .about *::after { transition-duration: .01ms !important; transition-delay: 0s !important; } }
 
 /* ---------- [03] Clients: the editing timeline ---------- */
-.tlc { position: fixed; inset: 0; z-index: 5; background: #0a0a0c; color: #f0f0f5; -webkit-user-select: none; user-select: none; opacity: 0; transition: opacity .35s ease; }
-.tlc.is-in { opacity: 1; }
+.tlc { position: fixed; inset: 0; z-index: 5; background: #0a0a0c; color: #f0f0f5; -webkit-user-select: none; user-select: none; }
+/* entrance: the ruler runs out left to right, the track names come in, then every clip is laid down from its
+   left edge (earliest first, track by track), the sound fills in behind and the playhead drops in */
+.tlc .tlc__ruler { clip-path: inset(0 100% 0 0); transition: clip-path .9s cubic-bezier(.6, 0, .2, 1) .1s; }
+.tlc .tlc__lab { opacity: 0; transform: translate(-14px, -50%); transition: opacity .4s ease var(--d, 0s), transform .5s cubic-bezier(.2, .9, .2, 1) var(--d, 0s); }
+.tlc .tlc__clip { transform: scaleX(0); transform-origin: left center; transition: transform .55s cubic-bezier(.2, .9, .2, 1) var(--d, .3s), background .15s, border-color .15s; }
+.tlc .tlc__clip span { opacity: 0; transition: opacity .3s ease calc(var(--d, .3s) + .3s); }
+.tlc .tlc__wave { clip-path: inset(0 100% 0 0); transition: clip-path 1.1s cubic-bezier(.6, 0, .2, 1) .6s; }
+.tlc .tlc__head { transform: translateY(-30px); opacity: 0; transition: transform .5s cubic-bezier(.3, 1.4, .5, 1) 1.2s, opacity .3s 1.2s; }
+.tlc .tlc__bar, .tlc .tlc__hint, .tlc .tlc__ctl { opacity: 0; transform: translateY(12px); transition: opacity .5s ease 1.3s, transform .6s cubic-bezier(.2, .9, .2, 1) 1.3s; }
+.tlc.is-in .tlc__ruler, .tlc.is-in .tlc__wave { clip-path: inset(0); }
+.tlc.is-in .tlc__lab { opacity: 1; transform: translate(0, -50%); }
+.tlc.is-in .tlc__clip { transform: none; }
+.tlc.is-in .tlc__clip span { opacity: 1; }
+.tlc.is-in .tlc__head { transform: none; opacity: 1; }
+.tlc.is-in .tlc__bar, .tlc.is-in .tlc__ctl { opacity: 1; transform: none; }
+.tlc.is-in .tlc__hint { opacity: .7; transform: none; }
 .tlc__area { position: absolute; left: 20.5vw; right: 5.6vw; top: 12.5vh; bottom: 19vh; }
 .tlc__ruler { position: absolute; left: 0; right: 0; top: 0; height: 5vh; border-bottom: 1px solid rgb(240 240 245 / .35); cursor: ew-resize; }
 .tlc__tick { position: absolute; bottom: 0; width: 1px; height: 7px; background: rgb(240 240 245 / .45); }
@@ -588,11 +603,11 @@ body.is-theater .theater:hover ~ * { cursor: auto; }
 .tlc__head::before { content: ""; position: absolute; left: -7px; top: -2px; border: 8px solid transparent; border-top: 10px solid var(--red); border-bottom: 0; }
 .tlc__head::after { content: ""; position: absolute; left: -8px; right: -8px; top: 0; bottom: 0; }   /* easier to grab */
 .tlc__bar { position: absolute; left: 20.5vw; right: 5.6vw; bottom: 10.5vh; height: 6px; border-radius: 6px; background: rgb(240 240 245 / .14); cursor: pointer; touch-action: none; }
-.tlc__win { position: absolute; top: 0; bottom: 0; border-radius: 6px; background: rgb(240 240 245 / .5); cursor: grab; }
+.tlc__win { position: absolute; top: 0; bottom: 0; border-radius: 6px; background: rgb(240 240 245 / .55); cursor: grab; }
 .tlc__h { position: absolute; top: 50%; width: 16px; height: 16px; margin: -8px 0 0 -8px; border-radius: 50%; background: #f0f0f5; cursor: ew-resize; box-shadow: 0 1px 6px rgb(0 0 0 / .5); }
 .tlc__h--l { left: 0; } .tlc__h--r { left: 100%; }
 .tlc__hint, .tlc__ctl { position: absolute; bottom: 4.2vh; margin: 0; font-size: var(--ui); font-weight: 600; letter-spacing: .05em; text-transform: uppercase; line-height: 1; }
-.tlc__hint { left: var(--ax, 5.7vw); opacity: .7; }
+.tlc__hint { left: var(--ax, 5.7vw); }
 .tlc__ctl { right: 5.6vw; display: flex; gap: 1.8vw; }
 .tlc__ctl button { cursor: pointer; transition: color .15s; }
 .tlc__ctl button:hover { color: var(--red); }
@@ -601,6 +616,7 @@ body.is-theater .theater:hover ~ * { cursor: auto; }
   .tlc__area, .tlc__bar { left: 18px; right: 18px; }
   .tlc__area { top: 118px; bottom: 150px; }
   .tlc__lab { right: auto; left: 0; top: 4px; transform: none; width: auto; font-size: 9px; z-index: 1; }
+  .tlc .tlc__lab, .tlc.is-in .tlc__lab { transform: none; }
   .tlc__clip { top: 30%; height: 56%; font-size: 13px; padding: 0 8px; border-width: 1.5px; }
   .tlc__bar { bottom: 92px; }
   .tlc__hint { display: none; }
