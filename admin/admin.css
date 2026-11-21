@@ -12,7 +12,7 @@
 :root {
   --black: #000; --ink: #fff;
   --surface: #131313; --raise: #1d1d1d; --line: #2b2b2b;
-  --mute: #9b9b9b; --red: rgb(204 26 22); --red-hi: rgb(232 44 36);
+  --mute: #9b9b9b; --red: #e91e22; --red-hi: #f2383c;
   --display: "PP Neue Montreal", "Helvetica Neue", Helvetica, Arial, sans-serif;
   --body: "Helvetica Neue", Helvetica, Arial, sans-serif;
   --curtain: cubic-bezier(.7, 0, .22, 1);

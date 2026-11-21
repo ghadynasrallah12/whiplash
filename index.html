@@ -63,9 +63,14 @@
         <div class="plate__cubes" id="cubes" aria-hidden="true"></div>   <!-- red blocks lock the photo, then crack open -->
         <figcaption id="ch-cap"></figcaption>
       </figure>
+      <!-- the chosen chapter's line, typed out beside the picture, and a timeline ruler with the playhead on that chapter -->
+      <div class="chline" id="chline" aria-live="polite">
+        <p class="chline__meta" id="chline-meta"></p>
+        <p class="chline__text" id="chline-text"></p>
+      </div>
+      <div class="scrub" id="scrub" aria-hidden="true"><i class="scrub__head" id="scrub-head"></i></div>
       <a class="about__back" href="#home" data-go="home">← [01] Home</a>
       <span class="about__hint">Pick a chapter</span>
-      <!-- temporary: compare the two photo reveals -->
     </div>
 
     <!-- A chapter's own page. History = a timeline: the playhead runs along it and each date cuts in as it passes. -->

@@ -80,6 +80,8 @@ create table if not exists public.chapters (
   page      text not null default ''             -- 'timeline' = clicking it opens the History timeline
 );
 alter table public.chapters add column if not exists page text not null default '';
+-- the sentence typed beside the picture (Enter = new line, *stars* = white words)
+alter table public.chapters add column if not exists line text not null default '';
 
 -- History timeline: the dates the playhead runs through
 create table if not exists public.milestones (
@@ -190,6 +192,12 @@ select v.title, v.caption, v.position, v.page from (values
   ('Services',  'Edit to delivery',     3, '')
 ) as v(title, caption, position, page)
 where not exists (select 1 from public.chapters);
+-- fill in the sentences (only where none was written yet) and the new captions (only if still the old defaults)
+update public.chapters set line = 'It all started' || chr(10) || 'with *two editors.*' where title = 'History' and line = '';
+update public.chapters set line = 'From Lebanon to *the world,*' || chr(10) || 'and from the world back to Lebanon.' where title = 'Countries' and line = '';
+update public.chapters set line = 'We fix it' || chr(10) || '*in post.*' where title = 'Services' and line = '';
+update public.chapters set caption = 'Beirut · Dubai · KSA' where caption = 'Beirut / Dubai / KSA';
+update public.chapters set caption = 'Edit · Colour · VFX · Sound' where caption = 'Edit to delivery';
 
 insert into public.crafts (name, line, position)
 select v.name, v.line, v.position from (values

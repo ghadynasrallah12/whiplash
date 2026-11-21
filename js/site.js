@@ -59,7 +59,7 @@
     setTimeout(function () { setState(SCENES.indexOf('about')); }, 760);
     setTimeout(function () { about.classList.add('is-open'); }, 820);
     coverPlate();
-    setTimeout(function () { about.classList.add('is-in'); revealPlate(450); }, 900);
+    setTimeout(function () { about.classList.add('is-in'); revealPlate(450); chLine(chapter, true); }, 900);
     setTimeout(function () { body.classList.remove('is-opening'); drawLogo(false); locked = false; }, 1500);
     setTimeout(function () { about.classList.add('is-settled'); }, 2000);   // entrance done: hovers may now move the words
   }
@@ -181,10 +181,11 @@
   // ---------- About chapters ----------
   // Fallback content; the dashboard (About) replaces it.
   var CHAPTERS = [
-    { title: 'History',   caption: 'Since 20XX',           image_url: 'assets/work-7.jpg' },
-    { title: 'Countries', caption: 'Beirut / Dubai / KSA', image_url: 'assets/work-5.jpg' },
-    { title: 'Services',  caption: 'Edit to delivery',     image_url: 'assets/work-1.jpg' },
+    { title: 'History',   caption: 'Since 20XX',                  image_url: 'assets/work-7.jpg', line: 'It all started\nwith *two editors.*' },
+    { title: 'Countries', caption: 'Beirut · Dubai · KSA',        image_url: 'assets/work-5.jpg', line: 'From Lebanon to *the world,*\nand from the world back to Lebanon.' },
+    { title: 'Services',  caption: 'Edit · Colour · VFX · Sound', image_url: 'assets/work-1.jpg', line: 'We fix it\n*in post.*' },
   ];
+  var LINES = {}; CHAPTERS.forEach(function (c) { LINES[c.title.toLowerCase()] = c.line; });   // used when the dashboard has no line yet
   var chapter = 0, chTrack, chImg = document.getElementById('ch-img'), chCap = document.getElementById('ch-cap'), plate = document.querySelector('.plate');
   function two(n) { return (n < 10 ? '0' : '') + n; }
 
@@ -320,6 +321,7 @@
     var first = Math.max(0, Math.min(CHAPTERS.length - 3, i - 2));
     chTrack.style.transform = 'translateY(calc(var(--pitch) * ' + -first + '))';
     if (same) return;
+    chLine(i);
     var fill = function () {
       chImg.src = c.image_url || ''; chImg.alt = c.title; chImg.style.visibility = c.image_url ? '' : 'hidden';
       chCap.textContent = '[' + two(i + 1) + '] ' + c.title + (c.caption ? ' — ' + c.caption : '');
@@ -329,6 +331,46 @@
     coverPlate();                                   // cubes snap back over the old picture…
     swapT = setTimeout(function () { fill(); revealPlate(60); }, 260);   // …and blaze off the new one
   }
+  // ---------- the chapter's line beside the picture: typed out, a few words in white ----------
+  // In the dashboard the line is plain text: Enter = new line, *stars* = white words.
+  var chMeta = document.getElementById('chline-meta'), chText = document.getElementById('chline-text');
+  var scrubHead = document.getElementById('scrub-head'), typeT = 0, lineAt = -1;
+  var TCS = ['00:00:08:12', '00:00:17:04', '00:00:26:00'];
+  function chTc(i) { if (TCS[i]) return TCS[i]; var s = 26 + (i - 2) * 9; return '00:00:' + two(s % 60) + ':' + two((i * 7) % 25); }
+  (function buildRuler() {   // the ruler's ticks: a long one every fifth
+    var r = document.getElementById('scrub'), f = document.createDocumentFragment();
+    for (var k = 0; k <= 50; k++) { var t = document.createElement('b'); t.style.left = (k * 2) + '%'; if (k % 5 === 0) t.className = 'is-long'; f.appendChild(t); }
+    r.insertBefore(f, scrubHead);
+  })();
+  function chLine(i, now) {
+    if (!CHAPTERS.length || i === lineAt && !now) return;
+    lineAt = i;
+    var c = CHAPTERS[i], line = c.line || LINES[(c.title || '').toLowerCase()] || '';
+    chMeta.textContent = '— Chapter ' + two(i + 1) + ' · ' + c.title + ' · ' + chTc(i);
+    scrubHead.style.left = ((i + 0.5) / CHAPTERS.length * 100) + '%';
+    // build the words, every letter hidden, then type them in with a block cursor at the end
+    clearInterval(typeT); chText.textContent = '';
+    var chars = [], hi = false;
+    line.split('\n').forEach(function (row, r) {
+      if (r) chText.appendChild(document.createElement('br'));
+      row.split(/(\*)/).forEach(function (part) {
+        if (part === '*') { hi = !hi; return; }
+        for (var k = 0; k < part.length; k++) {
+          var sp = document.createElement('span'); sp.textContent = part[k]; sp.className = hi ? 'is-hi' : ''; sp.style.visibility = 'hidden';
+          chText.appendChild(sp); chars.push(sp);
+        }
+      });
+    });
+    var cur = document.createElement('i'); cur.className = 'chline__cur'; chText.appendChild(cur);
+    if (reduce || !chars.length) { chars.forEach(function (sp) { sp.style.visibility = ''; }); return; }
+    var n = 0, step = Math.max(12, Math.min(34, 900 / chars.length));
+    chars[0].parentNode.insertBefore(cur, chars[0]);
+    typeT = setInterval(function () {
+      var sp = chars[n++]; sp.style.visibility = ''; sp.parentNode.insertBefore(cur, sp.nextSibling);
+      if (n >= chars.length) clearInterval(typeT);
+    }, step);
+  }
+
   renderChapters();
 
   // ---------- chapter page: History timeline ----------
@@ -800,7 +842,7 @@
       var d = document.querySelector('meta[name=description]'); if (d && map['seo.description']) d.content = map['seo.description'];
     }).catch(function () { /* keep the words already in the page */ });
     rest('chapters?select=*&order=position').then(function (rows) {
-      if (rows.length) { CHAPTERS = rows; renderChapters(); }
+      if (rows.length) { CHAPTERS = rows; lineAt = -1; renderChapters(); }
     }).catch(function () { /* table not there yet: keep the built-in chapters */ });
     rest('crafts?select=name,line,video_url&order=position').then(function (rows) {
       if (rows.length) { CRAFTS = rows; renderCrafts(); }

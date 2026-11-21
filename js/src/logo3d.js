@@ -9,13 +9,13 @@ window.THREE = THREE;   // shared with js/gl-media.js
 
 // ---------- Tunables -------------------------------------
 const CONFIG = {
-  color: 0xd41e12,   // brand red rgb(171,35,27) once lit         // base red
-  pageRed: 0xab231b,       // the About page's red = the lit front face; the flood flattens into it
+  color: 0xff0a10,   // base red: once lit, the front face shows the brand red #E91E22 (233,30,34)
+  pageRed: 0xe91e22,       // brand red (guidelines): the About page's red = the lit front face; the flood flattens into it
   depth: 14,               // extrusion depth (bar width = 16)
   skewDeg: 0,             // italic slant of the glyph
   heightVH: 0.26,          // logo height as a fraction of viewport height (desktop)
   heightVHMobile: 0.17,
-  basePose: { x: 0.10, y: 0.16, z: 0.24 }, // resting orientation (matches the reference render)
+  basePose: { x: 0, y: 0, z: 0 },          // resting orientation: upright and square to the screen (it still turns left/right)
   spin: 0.0045,            // radians of turn per pixel of cursor travel
   ease: 0.08,             // follow smoothing
   idleAfterMs: 2500,       // start slow auto-rotation after this much pointer silence
@@ -52,13 +52,13 @@ scene.environment = pmrem.fromScene(new RoomEnvironment(), 0.04).texture;
 scene.environmentIntensity = 0.15;
 
 // Lights (key / fill / rim)
-const key = new THREE.DirectionalLight(0xffffff, 1.7);
+const key = new THREE.DirectionalLight(0xffffff, 2.22);
 key.position.set(140, 200, 340);
-const fill = new THREE.DirectionalLight(0xffe4e0, 0.3);
+const fill = new THREE.DirectionalLight(0xffe4e0, 0.37);
 fill.position.set(-220, -40, 160);
-const rim = new THREE.DirectionalLight(0xffffff, 0.5);
+const rim = new THREE.DirectionalLight(0xffffff, 0.62);
 rim.position.set(120, 180, -220);
-const amb = new THREE.AmbientLight(0xffffff, 0.12);
+const amb = new THREE.AmbientLight(0xffffff, 0.15);
 scene.add(key, fill, rim, amb);
 const LIT = { key: key.intensity, fill: fill.intensity, rim: rim.intensity, amb: amb.intensity, env: scene.environmentIntensity };
 const FLAT = new THREE.Color(CONFIG.pageRed);

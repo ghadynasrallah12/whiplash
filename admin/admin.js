@@ -47,7 +47,7 @@
   const fail = (e) => {
     console.error(e);
     const m = (e && e.message) || '';
-    if (/is_red/.test(m)) return toast('Red folders need a one-time database update: run supabase/schema.sql in Supabase (SQL Editor).', true);
+    if (/is_red|'line' column/.test(m)) return toast('This needs a one-time database update: run supabase/schema.sql in Supabase (SQL Editor), then try again.', true);
     toast(m || 'Something went wrong. Try again.', true);
   };
 
@@ -87,7 +87,7 @@
       return {
         categories: cats,
         projects: P.map((p, i) => ({ id: 'p-' + i, position: i + 1, name: p[0], type: p[1], category_id: cat(p[2]), description: 'Driven by sound design as much as image, we shape a complete sensory experience; where audio and visuals work seamlessly and land deeply, memorably and with impact.', thumb_url: '../assets/' + p[3] + '.jpg', video_url: i === 0 ? '../assets/hero.mp4' : '', film_link: 'https://vimeo.com/', logo_url: '', award_url: '', credits: cr, is_hero: i === 0, published: i !== 9 })),
-        chapters: [['History', 'Since 20XX', 'work-7'], ['Countries', 'Beirut / Dubai / KSA', 'work-5'], ['Services', 'Edit to delivery', 'work-1']].map((c, i) => ({ id: 'ch-' + i, position: i + 1, title: c[0], caption: c[1], image_url: '../assets/' + c[2] + '.jpg' })),
+        chapters: [['History', 'Since 20XX', 'work-7', 'It all started\nwith *two editors.*'], ['Countries', 'Beirut · Dubai · KSA', 'work-5', 'From Lebanon to *the world,*\nand from the world back to Lebanon.'], ['Services', 'Edit · Colour · VFX · Sound', 'work-1', 'We fix it\n*in post.*']].map((c, i) => ({ id: 'ch-' + i, position: i + 1, title: c[0], caption: c[1], image_url: '../assets/' + c[2] + '.jpg', line: c[3] })),
         milestones: [['Founded in Beirut', 'Two editors, one room, one deadline.'], ['First global brand', 'The cut that put us on the map.'], ['Colour & sound in-house', 'Every craft under one roof.'], ['Dubai', 'A second home for the studio.'], ['KSA', 'Cutting for the Kingdom.'], ['Now', 'Still obsessed with the frame.']].map((m, i, all) => ({ id: 'ms-' + i, position: i + 1, year: i === all.length - 1 ? '2026' : '20XX', title: m[0], line: m[1] })),
         crafts: [['Edit', 'The cut, the rhythm, the story.'], ['Colour', 'The grade that sets the mood.'], ['VFX', "What wasn't there on set."], ['Sound', 'Design, mix and music.'], ['Online', 'Finishing and delivery.'], ['Motion', 'Titles, type and movement.']].map((c, i) => ({ id: 'cr-' + i, position: i + 1, name: c[0], line: c[1], video_url: '' })),
         clients: ['Sample Client', 'Another Brand', 'Agency Name'].map((name, i) => ({ id: 'c-' + i, position: i + 1, name, logo_url: '', website: '' })),
@@ -629,19 +629,20 @@
     });
   }
   function editChapter(c) {
-    const isNew = !c; c = c || { title: '', caption: '', image_url: '' };
+    const isNew = !c; c = c || { title: '', caption: '', image_url: '', line: '' };
+    const line = h('textarea', { rows: 3, placeholder: 'It all started\nwith *two editors.*' }); line.value = c.line || '';
     const title = h('input', { type: 'text', value: c.title, placeholder: 'History' });
     const caption = h('input', { type: 'text', value: c.caption, placeholder: 'Since 2015' });
     const img = mediaField({ label: 'Picture', kind: 'image', folder: 'about', value: c.image_url, hint: 'Portrait works best. The site turns it red and reveals it from under red cubes.' });
     openSheet({
       title: isNew ? 'New chapter' : 'Edit chapter',
-      build(body) { body.append(field('Title', title, 'One word works best. It is shown very large.'), field('Small line under the picture', caption), img); },
+      build(body) { body.append(field('Title', title, 'One word works best. It is shown very large.'), field('Sentence beside the picture', line, 'Typed out next to the picture when this chapter is picked. Press Enter for a new line. Put *stars* around the words that should be white.'), field('Small line under the picture', caption), img); },
       footer(foot, ctl) {
         const save = h('button', { class: 'btn btn--red', onclick: async () => {
           if (!title.value.trim()) { title.focus(); return toast('Give the chapter a title.', true); }
           if (img.busy) return toast('Wait for the upload to finish.', true);
           save.disabled = true;
-          try { const row = { ...c, title: title.value.trim(), caption: caption.value.trim(), image_url: img.get() }; if (isNew) row.position = S.chapters.length + 1;
+          try { const row = { ...c, title: title.value.trim(), caption: caption.value.trim(), image_url: img.get(), line: line.value.trim() }; if (isNew) row.position = S.chapters.length + 1;
             const saved = await api.save('chapters', row); if (isNew) S.chapters.push(saved); else S.chapters = S.chapters.map((x) => (x.id === saved.id ? saved : x));
             ctl.clean(); ctl.close(); render(); toast(isNew ? 'Chapter added' : 'Chapter saved'); } catch (e) { fail(e); save.disabled = false; }
         } }, 'Save chapter');
