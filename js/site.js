@@ -6,7 +6,7 @@
 // =========================================================
 (function () {
   'use strict';
-  var SCENES = ['home', 'about', 'clients', 'projects', 'team', 'contact'];
+  var SCENES = ['home', 'about', 'clients', 'projects', 'contact'];
   var FPS = 25;
   var CFG = window.WHIPLASH_CONFIG || {};
   var body = document.body, stage = document.querySelector('.stage'), reel = document.querySelector('.reel');
@@ -403,71 +403,45 @@
   }
   renderTimeline();
 
-  // ---------- Countries map ----------
-  var mapEl = document.getElementById('map'), mapSvg = document.getElementById('map-svg'), mapWord = document.getElementById('map-word');
-  var routes = [].slice.call(mapSvg.querySelectorAll('.map__route')), cities = [].slice.call(mapSvg.querySelectorAll('.city'));
-  var HOME_CITY = 'Beirut', mapReady = false;
-  // Each route runs from the middle of Beirut's "[01]" to the middle of the destination's "[0N]",
-  // so the lines never cross the Whiplash marks. Measured from the real text, so it follows any font.
-  function numberBox(g) {
-    var t = g.querySelector('text'), m = /translate\(([-\d.]+)[ ,]+([-\d.]+)\)/.exec(g.getAttribute('transform'));
-    var a = t.getExtentOfChar(0), b = t.getExtentOfChar(3);
-    return { x: +m[1] + (a.x + b.x + b.width) / 2, top: +m[2] + a.y, bottom: +m[2] + a.y + a.height };
-  }
-  function layoutRoutes(drawn) {
-    var from;
-    try { from = numberBox(cityEl('beirut')); } catch (e) { from = null; }
-    routes.forEach(function (r) {
-      if (from && from.bottom > from.top) {
-        var to = numberBox(cityEl(r.dataset.to)), bend = (r.dataset.bend || '.5 .2').split(' ').map(Number);
-        // arrive on the side of the number the curve comes from (from below for Dubai, which sits across the Gulf)
-        var sx = from.x, sy = from.bottom + 2, ex = to.x, ey0 = to.top - 2;
-        var cx = sx + (ex - sx) * bend[0], cy = sy + (ey0 - sy) * bend[1], ey = cy > to.bottom ? to.bottom + 2 : ey0;
-        r.setAttribute('d', 'M' + sx.toFixed(1) + ' ' + sy.toFixed(1) + ' Q' + cx.toFixed(1) + ' ' + cy.toFixed(1) + ' ' + ex.toFixed(1) + ' ' + ey.toFixed(1));
-      }
-      var len = r.getTotalLength(); r.dataset.len = len;
-      r.style.transition = 'none'; r.style.strokeDasharray = len; r.style.strokeDashoffset = drawn ? 0 : len;
-      void r.getBoundingClientRect(); r.style.transition = '';
-    });
-  }
-  layoutRoutes(false);
-  window.addEventListener('resize', function () { if (!mapEl.hidden) layoutRoutes(mapReady); });
-  function cityEl(key) { return mapSvg.querySelector('.city[data-city="' + key + '"]'); }
-  // the big word: a city name on two lines (BEI / RUT)
+  // ---------- Countries: the globe ----------
+  // The big word is the picked city (Beirut to start). Pick a city on the globe or in the list under the line.
+  var mapEl = document.getElementById('map'), mapWord = document.getElementById('map-word'), mapList = document.getElementById('map-cities');
+  var GLOBE = window.WL_GLOBE, mapReady = false, mapBtns = [];
   function setMapWord(name, fx) {
     var cut = Math.ceil(name.length / 2), parts = [name.slice(0, cut), name.slice(cut)];
+    if (name.indexOf(' ') > 0) parts = [name.slice(0, name.indexOf(' ')), name.slice(name.indexOf(' ') + 1)];   // New / York
+    mapWord.style.setProperty('--k', Math.min(1, 4.4 / Math.max(parts[0].length, parts[1].length)).toFixed(3));   // long names get smaller so they stay clear of the globe
     [].forEach.call(mapWord.querySelectorAll('.map__ln > span'), function (sp, k) { if (fx) scramble(sp, parts[k].toUpperCase()); else { clearInterval(scTimers.get(sp)); sp.textContent = parts[k]; } });
   }
-  function pickCity(g) {
-    if (!mapReady) return;
-    cities.forEach(function (c) { c.classList.toggle('is-picked', c === g); });
-    routes.forEach(function (r) { r.classList.toggle('is-picked', !!g && r.dataset.to === g.dataset.city); });
-    mapSvg.classList.toggle('has-pick', !!g && g.dataset.city !== 'beirut');
-    setMapWord(g ? g.dataset.name : HOME_CITY, true); tick(1, .5);
+  function mapPicked(c) {
+    var name = c ? c.name : 'Beirut';
+    mapBtns.forEach(function (b) { b.classList.toggle('is-picked', !!c && b.dataset.key === c.key); });
+    if (mapWord.dataset.city !== name) { mapWord.dataset.city = name; setMapWord(name, mapReady); if (mapReady) tick(1, .5); }
   }
-  cities.forEach(function (g) {
-    g.addEventListener('pointerenter', function (e) { if (e.pointerType === 'mouse') pickCity(g); });
-    g.addEventListener('pointerleave', function (e) { if (e.pointerType === 'mouse') pickCity(null); });
-    g.addEventListener('click', function () { pickCity(g); });
-    g.addEventListener('focus', function () { pickCity(g); });
-  });
-  function resetMap() {
-    mapReady = false; mapSvg.classList.remove('has-pick');
-    routes.forEach(function (r) { r.style.transition = 'none'; r.style.strokeDashoffset = r.dataset.len; r.classList.remove('is-picked'); void r.getBoundingClientRect(); r.style.transition = ''; });
-    cities.forEach(function (c) { c.classList.remove('is-on', 'is-picked'); });
-    setMapWord(HOME_CITY, false);
-  }
-  // Beirut first, then one route at a time; each city's mark lands when its line arrives
-  function playMap() {
-    if (reduce) { routes.forEach(function (r) { r.style.strokeDashoffset = 0; }); cities.forEach(function (c) { c.classList.add('is-on'); }); mapReady = true; return; }
-    later(function () { cityEl('beirut').classList.add('is-on'); tick(1, .5); }, 1050);
-    var t = 1450;
-    routes.forEach(function (r) {
-      later(function () { r.style.strokeDashoffset = 0; }, t);
-      later(function () { cityEl(r.dataset.to).classList.add('is-on'); tick(1, .45); }, t + 780);
-      t += 950;
+  function mapLine() {   // the Countries chapter's sentence, white words included
+    var c = CHAPTERS.filter(function (x) { return /countr/i.test(x.title); })[0], line = (c && c.line) || LINES.countries || '';
+    var el = document.getElementById('map-line'); el.textContent = '';
+    line.split('\n').forEach(function (row, r) {
+      if (r) el.appendChild(document.createElement('br'));
+      row.split('*').forEach(function (part, k) { var sp = document.createElement('span'); sp.textContent = part; if (k % 2) sp.className = 'is-hi'; el.appendChild(sp); });
     });
-    later(function () { mapReady = true; }, t);
+  }
+  if (GLOBE) {
+    GLOBE.init(document.getElementById('globe'), mapPicked);
+    document.getElementById('map-count').textContent = GLOBE.cities.length;
+    GLOBE.cities.forEach(function (c, i) {
+      var b = document.createElement('button'); b.type = 'button'; b.dataset.key = c.key;
+      b.innerHTML = '[' + two(i + 1) + '] ' + c.name + (c.ok ? '' : ' <em>— to confirm</em>');
+      b.addEventListener('pointerenter', function (e) { if (e.pointerType === 'mouse' && mapReady) GLOBE.pick(c.key, true); });
+      b.addEventListener('click', function () { GLOBE.pick(c.key, true); });
+      mapList.appendChild(b); mapBtns.push(b);
+    });
+  }
+  function resetMap() { mapReady = false; mapWord.dataset.city = 'Beirut'; setMapWord('Beirut', false); mapBtns.forEach(function (b) { b.classList.toggle('is-picked', b.dataset.key === 'beirut'); }); if (GLOBE) GLOBE.stop(); }
+  function playMap() {
+    mapLine();
+    if (GLOBE) GLOBE.start();
+    later(function () { mapReady = true; }, reduce ? 0 : 1200);
   }
   resetMap();
 
@@ -715,7 +689,7 @@
     }
     det.hidden = false; void det.offsetWidth;
     about.classList.add('is-detail-on'); det.classList.add('is-in'); dfoot.classList.add('is-in');
-    if (kind === 'timeline') playTimeline(); else if (kind === 'services') playServices(); else { layoutRoutes(false); playMap(); }
+    if (kind === 'timeline') playTimeline(); else if (kind === 'services') playServices(); else playMap();
   }
   function openDetail(i) {
     if (locked || !pageOf(i)) return;
@@ -858,34 +832,38 @@
     }).catch(function () {});
   }
 
-  // ---------- [06] Contact ----------
+  // ---------- [05] Contact ----------
   var contact = document.getElementById('contact'), contactBusy = false, contactT = [];
   // The word is the designed wordmark (assets/wordmark.png, already off-register as in the design).
   // It is painted as 7 strips; each strip flies in from the side and comes to rest at 0, i.e. exactly
   // the design. After that a strip only drifts a little with the cursor and glitches now and then.
   var WM_PULL = [-70, 55, -45, 85, -60, 48, -52];         // while hovering the word: how far each strip follows the cursor (2200 = the word's width)
-  var wmCanvas = document.getElementById('wm'), wmCtx = wmCanvas.getContext('2d'), wmImg = new Image();
+  // Two versions of the word: the clean wordmark (at rest) and the "timeline" cut (every 10 s it cuts over to it and back)
+  var wmCanvas = document.getElementById('wm'), wmCtx = wmCanvas.getContext('2d'), wmImg = new Image(), wmClean = new Image();
   var wmGeo = { W: 0 }, wm = [];
-  for (var wk = 0; wk < 7; wk++) wm.push({ x: (wk % 2 ? 1 : -1) * 3000, target: (wk % 2 ? 1 : -1) * 3000, rest: 0, pull: 0, settled: false });
+  for (var wk = 0; wk < 7; wk++) wm.push({ x: (wk % 2 ? 1 : -1) * 3000, target: (wk % 2 ? 1 : -1) * 3000, rest: 0, pull: 0, settled: false, cut: false });
   wmImg.onload = function () { if (!contact.hidden && wmBuild()) wmPaint(); };
   wmImg.src = 'assets/wordmark.png';
+  wmClean.onload = wmImg.onload; wmClean.src = 'assets/wordmark-clean.png';
   function wmBuild() {
     var r = wmCanvas.getBoundingClientRect(); if (!r.width || !r.height) return false;
     var dpr = Math.min(window.devicePixelRatio || 1, 2), W = r.width, H = r.height, mobile = innerWidth <= 760;
-    var ratio = wmImg.naturalWidth ? wmImg.naturalWidth / wmImg.naturalHeight : 7.07;
+    var ratio = wmClean.naturalWidth ? wmClean.naturalWidth / wmClean.naturalHeight : 6.69;   // the clean word sets the size
     var ww = mobile ? W - 24 : W * .93, x0 = mobile ? 12 : W * .0334;   // always 93% of the screen wide, like the design
     wmCanvas.width = Math.round(W * dpr); wmCanvas.height = Math.round(H * dpr);
     var unit = ww / 2200;
     wm.forEach(function (b, k) { b.pull = WM_PULL[k] * unit; });
-    wmGeo = { W: W, H: H, x0: x0, ww: ww, wh: ww / ratio, dpr: dpr, unit: unit };
+    var tr = wmImg.naturalWidth ? wmImg.naturalWidth / wmImg.naturalHeight : 7.07;
+    wmGeo = { W: W, H: H, x0: x0, ww: ww, wh: ww / ratio, th: ww / tr, dpr: dpr, unit: unit };
     return true;
   }
   function wmPaint() {
-    var g = wmGeo; if (!g.W || !wmImg.naturalWidth) return;
+    var g = wmGeo; if (!g.W || !wmImg.naturalWidth || !wmClean.naturalWidth) return;
     wmCtx.setTransform(1, 0, 0, 1, 0, 0); wmCtx.clearRect(0, 0, wmCanvas.width, wmCanvas.height);
-    var sh = wmImg.naturalHeight / 7, dh = g.wh / 7;
+    var top = (g.wh - g.th) / 2;   // the timeline cut is a little flatter: centred on the clean word
     wm.forEach(function (b, k) {
-      wmCtx.drawImage(wmImg, 0, k * sh, wmImg.naturalWidth, sh, (g.x0 + b.x) * g.dpr, k * dh * g.dpr, g.ww * g.dpr, dh * g.dpr);
+      var img = b.cut ? wmImg : wmClean, sh = img.naturalHeight / 7, dh = (b.cut ? g.th : g.wh) / 7, y = (b.cut ? top : 0) + k * dh;
+      wmCtx.drawImage(img, 0, k * sh, img.naturalWidth, sh, (g.x0 + b.x) * g.dpr, y * g.dpr, g.ww * g.dpr, dh * g.dpr);
     });
   }
   window.addEventListener('resize', function () { if (!contact.hidden && wmBuild()) wmPaint(); });
@@ -898,7 +876,24 @@
   }
   // At rest the word is exactly the design. Only while the pointer is ON the word: the strips re-cut
   // (each jumps sideways and snaps back, top to bottom) and then lean with the cursor; leaving puts them back.
-  function wmGlitch() { clearTimeout(wmGlitchT); }   // (no idle glitching any more)
+  // every 10 seconds: strip by strip, top to bottom, the word cuts sideways into the timeline version, holds, then cuts back
+  function wmSwap(toCut) {
+    wm.forEach(function (b, k) {
+      contactT.push(setTimeout(function () {
+        b.fast = true; b.target = (k % 2 ? 1 : -1) * (120 + Math.random() * 120) * (wmGeo.unit || 1);
+        setTimeout(function () { b.cut = toCut; b.target = b.rest; setTimeout(function () { b.fast = false; }, 220); }, 95);
+      }, k * 45));
+    });
+  }
+  function wmGlitch() {
+    clearTimeout(wmGlitchT);
+    if (reduce || contact.hidden) return;
+    wmGlitchT = setTimeout(function () {
+      if (contact.hidden) return;
+      wmSwap(true);
+      wmGlitchT = setTimeout(function () { wmSwap(false); wmGlitch(); }, 2600);
+    }, 10000);
+  }
   function wmRecut() {
     if (reduce) return;
     wm.forEach(function (b, k) {
@@ -931,7 +926,8 @@
     });
     wmPaint();
     if (!wmRaf) wmRaf = requestAnimationFrame(wmLoop);
-    clearTimeout(wmGlitchT); wmGlitchT = setTimeout(wmGlitch, 2600);
+    wm.forEach(function (b) { b.cut = false; });
+    wmGlitch();
   }
   function contactClear() { contactT.forEach(clearTimeout); contactT = []; }
   function contactSnap(on) {

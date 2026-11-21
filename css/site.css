@@ -218,38 +218,31 @@ body:not([data-scene=home]):not([data-scene=about]):not(.is-opening) .logo { opa
    The city name fills the left. On the right the land grows out of Beirut, then the routes
    draw one at a time (Jeddah, Riyadh, Dubai), each ending in a Whiplash mark. */
 .map { position: absolute; inset: 0; color: #0a0a0c; }
-.map__word { position: absolute; left: 6.7vw; top: 14.5vh; margin: 0; font-weight: 500; font-size: min(15.75vw, 27vh); line-height: .93; letter-spacing: -.02em; text-transform: uppercase; }
+.map__word { position: absolute; left: 6.7vw; top: 14.5vh; margin: 0; font-weight: 500; font-size: calc(min(15.75vw, 27vh) * var(--k, 1)); transition: font-size .4s cubic-bezier(.2, .9, .2, 1); line-height: .93; letter-spacing: -.02em; text-transform: uppercase; }
 .map__ln { display: block; overflow: hidden; padding-bottom: .04em; }
 .map__ln > span { display: block; transform: translateY(105%); transition: transform .9s cubic-bezier(.2, .9, .2, 1); }
 .map__ln:nth-child(2) > span { transition-delay: .12s; }
 .map.is-in .map__ln > span { transform: none; }
-.map__note { position: absolute; left: var(--ax); top: 74.3vh; width: 34vw; }
-.map__arrow { position: absolute; left: 1.8vw; top: 0; width: 12.2vw; height: auto; fill: #f0f0f5; transform: translateX(-140%); opacity: 0; transition: transform .9s cubic-bezier(.2, .9, .2, 1) .5s, opacity .3s .5s; }
-.map.is-in .map__arrow { transform: none; opacity: 1; animation: arrowNudge 2.6s ease-in-out 2.2s infinite; }
-@keyframes arrowNudge { 0%, 70%, 100% { transform: translateX(0); } 82% { transform: translateX(.7vw); } }
-.map__label { position: relative; margin: calc(2.77vw - 1.6em) 0 0; color: #fff; font-size: var(--ui); font-weight: 500; letter-spacing: .05em; text-transform: uppercase; line-height: 1; white-space: nowrap; }
-.map__line { position: relative; margin: 1.9vw 0 0; font-size: clamp(14px, 1.2vw, 28px); line-height: 1.25; font-weight: 500; max-width: 29vw; }
-.map__label, .map__line { opacity: 0; transform: translateY(10px); transition: opacity .5s .8s, transform .6s cubic-bezier(.2, .9, .2, 1) .8s; }
-.map.is-in .map__label, .map.is-in .map__line { opacity: 1; transform: none; }
-
-.map__svg { position: absolute; left: 47.5vw; top: 6.9vh; width: 47.9vw; height: 82.8vh; overflow: visible; }
-.map__land { fill: #f0f0f5; transform-box: view-box; transform-origin: 150px 140px; transform: scale(0); transition: transform 1s cubic-bezier(.3, 1.15, .4, 1) .15s; }
-.map.is-in .map__land { transform: none; }
-.map__route { fill: none; stroke: var(--page-red); stroke-width: 3.2; stroke-linecap: round; transition: stroke-dashoffset .85s cubic-bezier(.6, 0, .25, 1), opacity .25s, stroke-width .25s; }
-.city { cursor: pointer; outline: none; }
-.city__mark { fill: var(--page-red); }
-.city text { font-size: 26px; font-weight: 700; text-transform: uppercase; fill: #0a0a0c; letter-spacing: .01em; }
-/* a thin backing in the land's colour, so a name that runs past the coast (Dubai) still reads, red included */
-.city text { paint-order: stroke fill; stroke: #f0f0f5; stroke-width: 12px; stroke-linejoin: round; }
-.city > * { opacity: 0; transition: opacity .3s; }
-.city .city__mark { transform-box: fill-box; }
-.city.is-on > * { opacity: 1; }
-.city.is-on .city__mark { animation: markPop .5s cubic-bezier(.3, 1.6, .5, 1) both; }
-@keyframes markPop { from { opacity: 0; scale: .2; } to { opacity: 1; scale: 1; } }
-.city.is-picked text { fill: var(--page-red); }
-.map__svg.has-pick .map__route { opacity: .28; }
-.map__svg.has-pick .map__route.is-picked { opacity: 1; stroke-width: 4.6; }
-.city:focus-visible text { text-decoration: underline; }
+.map__word { color: #fff; pointer-events: none; z-index: 1; }
+/* the globe fills the page; everything else sits on top of it */
+.globe { position: absolute; inset: 0; width: 100%; height: 100%; display: block; touch-action: none; opacity: 0; transition: opacity .6s ease .2s; }
+.map.is-in .globe { opacity: 1; }
+.globe.is-grabbing { cursor: grabbing !important; }
+.map__legend { position: absolute; right: 6vw; top: 11vh; z-index: 1; pointer-events: none; text-align: right; font-size: var(--ui); font-weight: 500; letter-spacing: .05em; text-transform: uppercase; line-height: 1; color: #0a0a0c; opacity: 0; transition: opacity .5s 1.2s; }
+.map.is-in .map__legend { opacity: .75; }
+.map__legend p { margin: 0 0 8px; display: flex; justify-content: flex-end; align-items: center; gap: 8px; }
+.map__key { display: inline-block; width: 22px; border-top: 1.5px solid #0a0a0c; margin-left: 10px; }
+.map__key--dot { border-top-style: dotted; border-top-width: 2px; }
+.map__note { position: absolute; left: var(--ax); top: 73vh; right: 6vw; z-index: 1; }
+.map__label { margin: 0; color: #0a0a0c; font-size: var(--ui); font-weight: 500; letter-spacing: .05em; text-transform: uppercase; line-height: 1; white-space: nowrap; }
+.map__line { margin: 2.2vh 0 0; font-size: min(2.2vw, 4.1vh); line-height: 1.12; font-weight: 400; letter-spacing: -.01em; color: #0a0a0c; }
+.map__line .is-hi { color: #fff; }
+.map__cities { display: flex; flex-wrap: wrap; gap: 1.4vh 2.2vw; margin-top: 3.4vh; max-width: 64vw; }
+.map__cities button { font-size: var(--ui); font-weight: 500; letter-spacing: .05em; text-transform: uppercase; line-height: 1; color: #0a0a0c; padding: 2px 0; cursor: pointer; transition: color .2s; }
+.map__cities button em { font-style: normal; opacity: .55; }
+.map__cities button:hover, .map__cities button.is-picked { color: #fff; }
+.map__label, .map__line, .map__cities { opacity: 0; transform: translateY(10px); transition: opacity .5s .8s, transform .6s cubic-bezier(.2, .9, .2, 1) .8s; }
+.map.is-in .map__label, .map.is-in .map__line, .map.is-in .map__cities { opacity: 1; transform: none; }
 
 
 /* ---------- Services (dark page) ----------
@@ -392,7 +385,7 @@ body[data-scene=contact] .nav a:hover, body[data-scene=contact] .nav a[aria-curr
 .contact.is-solid .contact__shut { visibility: hidden; }
 
 .contact:not(.is-content) .wm { visibility: hidden; }   /* the word only appears once the dark page is in */
-.wm { position: absolute; left: 0; top: 13.97vh; width: 100vw; height: calc(93vw / 7.07); display: block; }
+.wm { position: absolute; left: 0; top: 13.97vh; width: 100vw; height: calc(93vw / 6.69); display: block; }
 .contact.is-wm-hover { cursor: crosshair; }
 
 .cta { position: absolute; margin: 0; left: var(--ax); top: 53.6vh; font-weight: 500; font-size: min(8.1vw, 14.4vh); line-height: .99; letter-spacing: -.015em; text-transform: uppercase; }
@@ -529,14 +522,15 @@ body.is-theater .theater:hover ~ * { cursor: auto; }
   .tl__head { display: none; }
   .dfoot { left: 18px; right: 18px; top: auto; bottom: 0; height: 58px; background: var(--page-red); }
   .hist { padding-bottom: 70px; }
-  .map { overflow-y: auto; padding: 118px 18px 76px; }
-  .map__word { position: static; font-size: 25vw; }
-  .map__svg { position: static; display: block; width: 100%; height: auto; margin-top: 10px; }
-  .map__note { position: relative; left: 0; top: 0; width: auto; margin-top: 18px; }
-  .map__arrow { left: 8px; width: 34vw; }
-  .map__label { margin-top: calc(34vw * .42 - 1.6em); }
-  .map__line { max-width: none; margin-top: 5.5vw; font-size: 16px; }
-  .city text { font-size: 40px; }
+  .map { overflow-y: auto; padding: 118px 18px 120px; }
+  .map__word { position: static; font-size: calc(25vw * var(--k, 1)); }
+  .map:not([hidden]) { display: flex; flex-direction: column; }
+  .map__word { order: 1; } .map__note { order: 3; }
+  .globe { order: 2; position: relative; inset: auto; height: 92vw; flex: none; margin-top: 10px; }
+  .map__legend { display: none; }
+  .map__note { position: relative; left: 0; top: 0; right: auto; margin-top: 14px; }
+  .map__line { font-size: 20px; }
+  .map__cities { max-width: none; gap: 10px 16px; margin-top: 16px; }
   .hist__chapters { display: none; }
 }
 @media (max-width: 760px) {
@@ -559,7 +553,7 @@ body.is-theater .theater:hover ~ * { cursor: auto; }
 @media (max-width: 760px) {
   body[data-scene=contact] .nav { right: 18px; }
   .contact { overflow-y: auto; }
-  .wm { height: calc((100vw - 24px) / 7.07); top: 120px; }
+  .wm { height: calc((100vw - 24px) / 6.69); top: 120px; }
   .cta { position: relative; left: 0; top: 0; margin: calc(120px + 26vw) 18px 0; font-size: 14.5vw; }
   .offices { position: relative; left: 0; right: 0; top: 0; margin: 28px 18px 0; }
   .offices li { grid-template-columns: 80px 1fr auto; height: 46px; }

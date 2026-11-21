@@ -312,7 +312,7 @@
     View: function () { return [['as Icons', '', function () { setMode('icons'); }, fd.hidden], ['as List', '', function () { setMode('list'); }, fd.hidden]]; },
     Go: function () { return [['All projects', '', function () { openFolder('all', fdFrom || rootIcon); }], null,
                              ['Home', '', function () { leave('home'); }], ['About', '', function () { leave('about'); }], ['Clients', '', function () { leave('clients'); }],
-                             ['Team', '', function () { leave('team'); }], ['Contact', '', function () { leave('contact'); }]]; },
+                             ['Contact', '', function () { leave('contact'); }]]; },
   };
   var openMenu = null;
   function closeMenus() { if (openMenu) { openMenu.menu.remove(); openMenu.btn.setAttribute('aria-expanded', 'false'); openMenu = null; } }
